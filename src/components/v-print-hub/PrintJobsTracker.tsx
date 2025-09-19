@@ -35,7 +35,6 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   }
 
   useEffect(() => {
-    fetchJobs(); 
     const intervalId = setInterval(fetchJobs, 5000);
     return () => clearInterval(intervalId);
   }, []);
