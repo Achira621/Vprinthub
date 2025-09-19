@@ -57,16 +57,16 @@ export function ContextualQA() {
                         </div>
                     )}
                 </CardContent>
-                <CardFooter>
-                    <Alert variant="default" className="text-xs">
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Demo Note</AlertTitle>
-                        <AlertDescription>
-                            This AI uses placeholder content about document properties for its answers, not the actual content of your uploaded file.
-                        </AlertDescription>
-                    </Alert>
-                </CardFooter>
             </form>
+            <CardFooter>
+                <Alert variant="default" className="text-xs">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Demo Note</AlertTitle>
+                    <AlertDescription>
+                        This AI uses placeholder content about document properties for its answers, not the actual content of your uploaded file.
+                    </AlertDescription>
+                </Alert>
+            </CardFooter>
         </Card>
     );
 }
