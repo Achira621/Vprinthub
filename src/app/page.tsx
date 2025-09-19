@@ -31,8 +31,8 @@ export default function LandingPage() {
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link href="#about" className="text-sm font-medium hover:text-primary transition-colors">About</Link>
-            <Link href="#showcase" className="text-sm font-medium hover:text-primary transition-colors">Showcase</Link>
-            <Link href="#specs" className="text-sm font-medium hover:text-primary transition-colors">Specs</Link>
+            <Link href="#features" className="text-sm font-medium hover:text-primary transition-colors">Features</Link>
+            <Link href="#get-started" className="text-sm font-medium hover:text-primary transition-colors">Get Started</Link>
           </nav>
           <Button asChild>
             <Link href="/login">
@@ -76,17 +76,17 @@ export default function LandingPage() {
             <motion.div variants={fadeIn}>
               <h2 className="text-4xl font-bold tracking-tight">Radical Simplicity</h2>
               <p className="mt-4 text-muted-foreground text-lg">
-                We believe printing should be effortless. V-Print strips away the complexities—no drivers, no cables, no hassle. Just pure, uninterrupted workflow from your device to the printer.
+                We believe printing should be effortless. V-Print strips away the complexities—no drivers, no cables, no hassle. Just pure, uninterrupted workflow from your device to any printer on campus.
               </p>
             </motion.div>
             <motion.div className="relative h-64 md:h-80" variants={fadeIn}>
-                <Image src="https://picsum.photos/seed/printer/600/400" alt="Minimalist printer design" layout="fill" objectFit="cover" className="rounded-lg" data-ai-hint="minimalist printer" />
+                <Image src="https://picsum.photos/seed/abstract/600/400" alt="Abstract futuristic graphic" layout="fill" objectFit="cover" className="rounded-lg" data-ai-hint="abstract futuristic" />
             </motion.div>
           </div>
         </motion.section>
 
-        {/* Showcase Section */}
-        <motion.section id="showcase" className="py-20 md:py-32"
+        {/* Features Section */}
+        <motion.section id="features" className="py-20 md:py-32"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
@@ -99,51 +99,40 @@ export default function LandingPage() {
             </motion.p>
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
               <motion.div variants={fadeIn} className="bg-secondary p-8 rounded-lg text-left">
-                <h3 className="text-2xl font-bold">Glyph Interface</h3>
-                <p className="mt-2 text-muted-foreground">Intuitive light patterns provide notifications for print status, errors, and low paper levels.</p>
+                <h3 className="text-2xl font-bold">Cloud-Powered</h3>
+                <p className="mt-2 text-muted-foreground">Upload your documents from anywhere and print them on any connected printer.</p>
               </motion.div>
               <motion.div variants={fadeIn} className="bg-secondary p-8 rounded-lg text-left">
-                <h3 className="text-2xl font-bold">V-Print OS</h3>
-                <p className="mt-2 text-muted-foreground">A clean, bloat-free operating system ensures fast processing and reliable connections.</p>
+                <h3 className="text-2xl font-bold">Pay & Go</h3>
+                <p className="mt-2 text-muted-foreground">A simple and secure wallet system to pay for your print jobs instantly.</p>
               </motion.div>
               <motion.div variants={fadeIn} className="bg-secondary p-8 rounded-lg text-left">
-                <h3 className="text-2xl font-bold">Sustainable Build</h3>
-                <p className="mt-2 text-muted-foreground">Made from 100% recycled aluminum and plastics, designed for longevity.</p>
+                <h3 className="text-2xl font-bold">Real-time Tracking</h3>
+                <p className="mt-2 text-muted-foreground">Monitor your print queue and get live status updates on all your jobs.</p>
               </motion.div>
             </div>
           </div>
         </motion.section>
 
-        {/* Tech Specs Section */}
-        <motion.section id="specs" className="py-20 md:py-32 bg-secondary"
+        {/* Get Started Section */}
+        <motion.section id="get-started" className="py-20 md:py-32 bg-secondary"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
             variants={stagger}
         >
-          <div className="container mx-auto">
-            <motion.h2 className="text-4xl font-bold tracking-tight text-center" variants={fadeIn}>Tech Specs</motion.h2>
-            <motion.div className="mt-12 max-w-2xl mx-auto" variants={fadeIn}>
-              <div className="flow-root">
-                <div className="-my-4 divide-y divide-border">
-                  <div className="flex items-center justify-between py-4">
-                    <p className="font-medium">Connectivity</p>
-                    <p className="text-muted-foreground">Wi-Fi 6, Bluetooth 5.3, NFC</p>
-                  </div>
-                  <div className="flex items-center justify-between py-4">
-                    <p className="font-medium">Print Speed</p>
-                    <p className="text-muted-foreground">Up to 22 ppm (B&W), 18 ppm (Color)</p>
-                  </div>
-                  <div className="flex items-center justify-between py-4">
-                    <p className="font-medium">Resolution</p>
-                    <p className="text-muted-foreground">4800 x 1200 dpi</p>
-                  </div>
-                  <div className="flex items-center justify-between py-4">
-                    <p className="font-medium">Paper Capacity</p>
-                    <p className="text-muted-foreground">150 sheets</p>
-                  </div>
-                </div>
-              </div>
+          <div className="container mx-auto text-center">
+            <motion.h2 className="text-4xl font-bold tracking-tight" variants={fadeIn}>Ready to Print?</motion.h2>
+            <motion.p className="mt-4 max-w-2xl mx-auto text-muted-foreground text-lg" variants={fadeIn}>
+              Create an account and start printing in minutes. It's that easy.
+            </motion.p>
+             <motion.div variants={fadeIn} className="mt-8">
+                <Button size="lg" asChild>
+                    <Link href="/login">
+                        Sign Up Now
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
             </motion.div>
           </div>
         </motion.section>
