@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useRef, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ function SubmitButton() {
 
 export function ContextualQA() {
     const formRef = useRef<HTMLFormElement>(null);
-    const [state, formAction] = useFormState(askDocumentQuestion, { answer: '' });
+    const [state, formAction] = useActionState(askDocumentQuestion, { answer: '' });
 
     return (
         <Card>
