@@ -13,18 +13,57 @@ let walletBalance = 500.00;
 // Simulate network latency
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// --- Print Job Estimation Constants ---
+const PRINT_SPEED_PAGES_PER_MINUTE = 10;
+const COLLECTION_BUFFER_MINUTES = 5;
+
+function calculatePrintTime(pages: number, copies: number): number {
+  return (pages * copies) / PRINT_SPEED_PAGES_PER_MINUTE;
+}
+
+function findNextAvailableSlot(durationMinutes: number): Date {
+  // Find the end time of the last scheduled job
+  const lastJob = jobs.length > 0 ? jobs[0] : null;
+  const now = new Date();
+
+  // Start looking for a slot from the later of now or the last job's completion time
+  let nextAvailableStartTime = lastJob && lastJob.completionTime && lastJob.completionTime > now ? lastJob.completionTime : now;
+
+  // For demo, let's ensure bookings are within "operating hours" (e.g., 9am-5pm)
+  // This is a simplified check. A real system would be more complex.
+  if (nextAvailableStartTime.getHours() >= 17) {
+    nextAvailableStartTime.setDate(nextAvailableStartTime.getDate() + 1);
+    nextAvailableStartTime.setHours(9, 0, 0, 0);
+  }
+   if (nextAvailableStartTime.getHours() < 9) {
+    nextAvailableStartTime.setHours(9, 0, 0, 0);
+  }
+
+  // The completion time is the start time plus the duration of the new job
+  const completionTime = new Date(nextAvailableStartTime.getTime() + durationMinutes * 60000);
+
+  return completionTime;
+}
+
+
 export async function getPrintJobs(): Promise<PrintJob[]> {
   await sleep(200);
   return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
-export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt'>): Promise<PrintJob> {
+export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt' | 'completionTime'>): Promise<PrintJob> {
   await sleep(500);
+
+  const printDuration = calculatePrintTime(data.pages, data.copies);
+  const totalDuration = printDuration + COLLECTION_BUFFER_MINUTES;
+  const completionTime = findNextAvailableSlot(totalDuration);
+
   const newJob: PrintJob = {
     ...data,
     id: `job-${Date.now()}`,
     status: 'awaiting-payment',
     createdAt: new Date(),
+    completionTime: completionTime,
   };
 
   jobs.unshift(newJob);
@@ -52,14 +91,16 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
   job.status = 'processing';
   revalidatePath('/dashboard');
 
-  // Simulate job completion after a delay
+  // Simulate job completion after a delay. In a real scenario, this would be triggered by the printer.
+  // We'll set it to complete around its scheduled completion time.
+  const processingTime = job.completionTime.getTime() - new Date().getTime();
   setTimeout(() => {
     const completedJob = jobs.find(j => j.id === jobId);
     if(completedJob) {
         completedJob.status = 'completed';
         revalidatePath('/dashboard');
     }
-  }, 10000 + Math.random() * 5000); // 10-15 second processing time
+  }, Math.max(processingTime, 5000)); // At least 5 seconds
 
   return { success: true, message: 'Payment successful!' };
 }

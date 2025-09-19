@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPrintJobs } from '@/lib/actions';
 import { PrintJob, PrintJobStatus } from '@/lib/types';
-import { Clock, Loader2, CheckCircle, AlertTriangle, FileText, RefreshCw } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Clock, Loader2, CheckCircle, AlertTriangle, FileText, RefreshCw, CalendarClock } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -35,9 +35,10 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   }
 
   useEffect(() => {
-    const intervalId = setInterval(fetchJobs, 5000);
+    // Initial fetch is now handled by the server, so we only set up the interval
+    const intervalId = setInterval(fetchJobs, 5000); // Poll for updates every 5 seconds
     return () => clearInterval(intervalId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -69,20 +70,26 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
                         {statusConfig[job.status].icon}
                     </div>
                     <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                        <p className="font-semibold truncate pr-2">{job.fileName}</p>
-                        <Badge variant={statusConfig[job.status].badge} className="capitalize text-xs">
-                            {statusConfig[job.status].text}
-                        </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center justify-between mt-1">
-                        <span>
-                            {job.copies} {job.copies > 1 ? 'copies' : 'copy'} &bull; ₹{job.cost.toFixed(2)}
-                        </span>
-                        <span className='text-xs'>
-                            {formatDistanceToNow(job.createdAt, { addSuffix: true })}
-                        </span>
-                    </div>
+                        <div className="flex justify-between items-start">
+                            <p className="font-semibold truncate pr-2">{job.fileName}</p>
+                            <Badge variant={statusConfig[job.status].badge} className="capitalize text-xs">
+                                {statusConfig[job.status].text}
+                            </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground flex items-center justify-between mt-1">
+                            <span>
+                                {job.copies} {job.copies > 1 ? 'copies' : 'copy'} &bull; ₹{job.cost.toFixed(2)}
+                            </span>
+                            <span className='text-xs'>
+                                {formatDistanceToNow(job.createdAt, { addSuffix: true })}
+                            </span>
+                        </div>
+                        {job.status !== 'awaiting-payment' && job.completionTime && (
+                             <div className="text-xs text-primary/80 flex items-center gap-1.5 mt-2 pt-2 border-t border-white/5">
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                Ready by: {format(job.completionTime, 'h:mm a')}
+                            </div>
+                        )}
                     </div>
                 </motion.li>
                 ))}

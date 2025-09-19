@@ -13,9 +13,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { createPrintJob, payForPrintJob } from '@/lib/actions';
 import { PaperSize, PrintJob } from '@/lib/types';
-import { UploadCloud, FileText, Printer, Wallet, Loader2, CheckCircle, QrCode } from 'lucide-react';
+import { UploadCloud, FileText, Wallet, Loader2, QrCode, CalendarClock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeDialog } from './QRCodeDialog';
+import { format } from 'date-fns';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -248,7 +249,11 @@ export function PrintWorkflow() {
                   <div className="p-4 bg-black/20 rounded-lg space-y-2 border border-white/10">
                     <div className="flex justify-between"><span className="text-muted-foreground">Document:</span> <span className="font-semibold">{activeJob.fileName}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Copies:</span> <span className="font-semibold">{activeJob.copies}</span></div>
-                    <div className="flex justify-between text-2xl font-bold pt-4">
+                     <div className="flex justify-between items-center pt-2 mt-2 border-t border-white/10">
+                        <span className="text-muted-foreground flex items-center gap-2"><CalendarClock className="h-4 w-4"/> Est. Completion:</span>
+                        <span className="font-semibold text-primary">{format(activeJob.completionTime, 'EEE, h:mm a')}</span>
+                    </div>
+                    <div className="flex justify-between text-2xl font-bold pt-2">
                       <span>Total:</span> <span className="text-primary">₹{activeJob.cost.toFixed(2)}</span>
                     </div>
                   </div>
