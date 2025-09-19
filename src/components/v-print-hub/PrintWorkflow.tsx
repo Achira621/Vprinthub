@@ -13,8 +13,9 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { createPrintJob, payForPrintJob } from '@/lib/actions';
 import { PaperSize, PrintJob } from '@/lib/types';
-import { UploadCloud, FileText, Printer, Wallet, Loader2, CheckCircle } from 'lucide-react';
+import { UploadCloud, FileText, Printer, Wallet, Loader2, CheckCircle, QrCode } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeDialog } from './QRCodeDialog';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -36,6 +37,7 @@ export function PrintWorkflow() {
   const [cost, setCost] = useState(0);
   const [activeJob, setActiveJob] = useState<PrintJob | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQrVisible, setIsQrVisible] = useState(false);
   const { toast } = useToast();
 
   const { control, watch, handleSubmit, formState: { errors } } = useForm<PrintConfig>({
@@ -86,16 +88,20 @@ export function PrintWorkflow() {
     }
   };
 
-  const handlePayment = async (method: 'wallet' | 'upi') => {
+  const handleUpiPayment = () => {
+    if (!activeJob) return;
+    setIsQrVisible(true);
+  };
+
+  const handleWalletPayment = async () => {
     if (!activeJob) return;
     setIsSubmitting(true);
     try {
-      const result = await payForPrintJob(activeJob.id, method);
+      const result = await payForPrintJob(activeJob.id, 'wallet');
       if (result.success) {
         toast({
           title: 'Payment Successful!',
           description: 'Your print job is now being processed.',
-          action: <div className="p-1 bg-green-500 text-white rounded-full"><CheckCircle className="h-4 w-4"/></div>,
         });
         resetWorkflow();
       } else {
@@ -108,6 +114,26 @@ export function PrintWorkflow() {
     }
   };
 
+  const onQrDialogClose = async () => {
+    setIsQrVisible(false);
+    if (!activeJob) return;
+    setIsSubmitting(true);
+    try {
+        const result = await payForPrintJob(activeJob.id, 'upi');
+        if (result.success) {
+            toast({ title: 'Payment Confirmed!', description: 'Your print job is being processed.' });
+            resetWorkflow();
+        } else {
+            toast({ variant: 'destructive', title: 'Payment Failed', description: 'Could not confirm UPI payment.' });
+        }
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'An error occurred during payment confirmation.' });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+
   const resetWorkflow = () => {
     setFile(null);
     setStep('upload');
@@ -115,13 +141,13 @@ export function PrintWorkflow() {
   };
   
   const stepVariants = {
-    hidden: { opacity: 0, x: -50 },
+    hidden: { opacity: 0, x: -30 },
     visible: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: 50 },
+    exit: { opacity: 0, x: 30 },
   };
 
   return (
-    <Card className="overflow-hidden bg-card border-border">
+    <Card className="overflow-hidden glass-card">
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -129,7 +155,7 @@ export function PrintWorkflow() {
           initial="hidden"
           animate="visible"
           exit="exit"
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
         >
           {step === 'upload' && (
             <div>
@@ -138,25 +164,20 @@ export function PrintWorkflow() {
                 <CardDescription>Upload your document to begin.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div 
-                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-muted rounded-lg hover:border-primary hover:bg-secondary/50 transition-colors cursor-pointer"
+                <label 
+                    htmlFor="file-upload"
+                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/20 rounded-lg hover:border-primary hover:bg-white/5 transition-all duration-300 cursor-pointer group"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
                         handleFileChange(e.dataTransfer.files[0]);
                     }}
                 >
-                  <UploadCloud className="w-12 h-12 text-muted-foreground mb-4" />
-                  <p className="font-semibold">Drag & drop your file here</p>
-                  <p className="text-sm text-muted-foreground">or</p>
-                  <Button variant="link" asChild className="text-primary">
-                    <label htmlFor="file-upload">
-                        click to browse
-                        <input id="file-upload" type="file" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} accept={ACCEPTED_FILE_TYPES.join(',')} />
-                    </label>
-                  </Button>
+                  <UploadCloud className="w-12 h-12 text-muted-foreground mb-4 transition-transform group-hover:scale-110 group-hover:text-primary" />
+                  <p className="font-semibold">Drag & drop or <span className="text-primary">browse files</span></p>
                   <p className="text-xs text-muted-foreground mt-2">PDF, DOC, DOCX (Max 5MB)</p>
-                </div>
+                  <input id="file-upload" type="file" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} accept={ACCEPTED_FILE_TYPES.join(',')} />
+                </label>
               </CardContent>
             </div>
           )}
@@ -168,19 +189,19 @@ export function PrintWorkflow() {
                 <CardDescription>Adjust the settings for your document.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-3 p-3 bg-secondary rounded-md">
+                <div className="flex items-center gap-3 p-3 bg-black/20 rounded-md border border-white/10">
                     <FileText className="w-5 h-5 text-primary" />
                     <span className="font-medium truncate">{file.name}</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="copies">Copies</Label>
-                    <Controller name="copies" control={control} render={({ field }) => <Input {...field} id="copies" type="number" />} />
+                    <Controller name="copies" control={control} render={({ field }) => <Input {...field} id="copies" type="number" className="bg-black/20 border-white/20" />} />
                     {errors.copies && <p className="text-destructive text-sm">{errors.copies.message}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pages">Number of Pages</Label>
-                    <Controller name="pages" control={control} render={({ field }) => <Input {...field} id="pages" type="number" />} />
+                    <Controller name="pages" control={control} render={({ field }) => <Input {...field} id="pages" type="number" className="bg-black/20 border-white/20" />} />
                     {errors.pages && <p className="text-destructive text-sm">{errors.pages.message}</p>}
                   </div>
                 </div>
@@ -189,7 +210,7 @@ export function PrintWorkflow() {
                         <Label htmlFor="paperSize">Paper Size</Label>
                         <Controller name="paperSize" control={control} render={({ field }) => (
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger id="paperSize"><SelectValue /></SelectTrigger>
+                                <SelectTrigger id="paperSize" className="bg-black/20 border-white/20"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="A4">A4</SelectItem>
                                     <SelectItem value="Letter">Letter</SelectItem>
@@ -197,20 +218,20 @@ export function PrintWorkflow() {
                             </Select>
                         )} />
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-md border h-10 mt-6">
+                    <div className="flex items-center justify-between p-3 rounded-md border border-white/20 h-10 mt-6 bg-black/20">
                         <Label htmlFor="isColor">Color Printing</Label>
                         <Controller name="isColor" control={control} render={({ field }) => <Switch id="isColor" checked={field.value} onCheckedChange={field.onChange} />} />
                     </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between items-center bg-secondary">
+              <CardFooter className="flex justify-between items-center bg-black/20 p-4">
                 <div className="text-lg font-bold">
-                    Estimated Cost: <span className="text-primary">₹{cost.toFixed(2)}</span>
+                    Cost: <span className="text-primary">₹{cost.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" type="button" onClick={resetWorkflow}>Cancel</Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Proceed to Payment"}
+                    <Button variant="outline" type="button" onClick={resetWorkflow} className="border-white/20 hover:bg-white/10">Cancel</Button>
+                    <Button type="submit" disabled={isSubmitting} className="button-glow">
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Proceed"}
                     </Button>
                 </div>
               </CardFooter>
@@ -224,25 +245,31 @@ export function PrintWorkflow() {
                   <CardDescription>Your print job is ready. Pay to start printing.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 bg-secondary rounded-lg space-y-2 border border-border">
+                  <div className="p-4 bg-black/20 rounded-lg space-y-2 border border-white/10">
                     <div className="flex justify-between"><span className="text-muted-foreground">Document:</span> <span className="font-semibold">{activeJob.fileName}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Copies:</span> <span className="font-semibold">{activeJob.copies}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Total Pages:</span> <span className="font-semibold">{activeJob.pages * activeJob.copies}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Print Type:</span> <span className="font-semibold">{activeJob.isColor ? 'Color' : 'Black & White'}</span></div>
-                  </div>
-                  <div className="text-2xl font-bold text-center py-4">
-                    Total Amount: <span className="text-primary">₹{activeJob.cost.toFixed(2)}</span>
+                    <div className="flex justify-between text-2xl font-bold pt-4">
+                      <span>Total:</span> <span className="text-primary">₹{activeJob.cost.toFixed(2)}</span>
+                    </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-3">
-                    <Button size="lg" className="w-full bg-primary hover:bg-primary/90" onClick={() => handlePayment('upi')} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Printer className="mr-2 h-4 w-4"/> Pay with UPI</>}
+                <CardFooter className="flex flex-col gap-3 p-4">
+                    <Button size="lg" className="w-full button-glow" onClick={handleUpiPayment} disabled={isSubmitting}>
+                        <QrCode className="mr-2 h-5 w-5"/> Pay with UPI
                     </Button>
-                    <Button size="lg" variant="secondary" className="w-full" onClick={() => handlePayment('wallet')} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Wallet className="mr-2 h-4 w-4"/> Pay from Wallet</>}
+                    <Button size="lg" variant="secondary" className="w-full bg-white/10 hover:bg-white/20" onClick={handleWalletPayment} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Wallet className="mr-2 h-5 w-5"/> Pay from Wallet</>}
                     </Button>
-                    <Button variant="ghost" onClick={resetWorkflow} disabled={isSubmitting} className="mt-2">Cancel Order</Button>
+                    <Button variant="ghost" onClick={resetWorkflow} disabled={isSubmitting} className="mt-2 text-muted-foreground hover:text-foreground">Cancel Order</Button>
                 </CardFooter>
+                
+                {isQrVisible && (
+                    <QRCodeDialog 
+                        job={activeJob}
+                        open={isQrVisible} 
+                        onClose={onQrDialogClose}
+                    />
+                )}
             </div>
           )}
         </motion.div>

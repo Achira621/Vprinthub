@@ -22,8 +22,8 @@ const stagger = {
 
 export default function LandingPage() {
   return (
-    <div className="bg-background text-foreground min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-background/80">
+    <div className="bg-background text-foreground min-h-screen flex flex-col font-sans">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-background/80 border-b border-border">
         <div className="container mx-auto flex items-center justify-between p-4">
           <Link href="/" className="flex items-center gap-2">
             <VPrintIcon className="w-7 h-7 text-primary" />
@@ -34,7 +34,7 @@ export default function LandingPage() {
             <Link href="#features" className="text-sm font-medium hover:text-primary transition-colors">Features</Link>
             <Link href="#get-started" className="text-sm font-medium hover:text-primary transition-colors">Get Started</Link>
           </nav>
-          <Button asChild>
+          <Button asChild className="button-glow transition-all duration-300 transform hover:scale-105">
             <Link href="/login">
               Dashboard <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -45,11 +45,16 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <motion.section 
-          className="container mx-auto flex flex-col items-center justify-center text-center py-20 md:py-32"
+          className="container mx-auto flex flex-col items-center justify-center text-center py-20 md:py-32 relative"
           initial="hidden"
           animate="visible"
           variants={stagger}
         >
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-900/50 rounded-full filter blur-3xl opacity-30 animate-blob"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-900/50 rounded-full filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          </div>
+
           <motion.h1 className="text-5xl md:text-7xl font-bold tracking-tighter" variants={fadeIn}>
             Printing. <br /> Reimagined.
           </motion.h1>
@@ -57,7 +62,7 @@ export default function LandingPage() {
             Seamless, wireless, and brilliant quality printing for the modern campus. Welcome to the future.
           </motion.p>
           <motion.div variants={fadeIn} className="mt-8">
-            <Button size="lg" asChild>
+            <Button size="lg" asChild className="button-glow transition-all duration-300 transform hover:scale-105">
               <Link href="/dashboard">
                 Get Started
               </Link>
@@ -66,7 +71,7 @@ export default function LandingPage() {
         </motion.section>
 
         {/* About Section */}
-        <motion.section id="about" className="py-20 md:py-32 bg-secondary"
+        <motion.section id="about" className="py-20 md:py-32 bg-secondary/50"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.5 }}
@@ -80,7 +85,8 @@ export default function LandingPage() {
               </p>
             </motion.div>
             <motion.div className="relative h-64 md:h-80" variants={fadeIn}>
-                <Image src="https://picsum.photos/seed/abstract/600/400" alt="Abstract futuristic graphic" layout="fill" objectFit="cover" className="rounded-lg" data-ai-hint="abstract futuristic" />
+                <Image src="https://picsum.photos/seed/abstract/600/400" alt="Abstract futuristic graphic" layout="fill" objectFit="cover" className="rounded-lg opacity-70" data-ai-hint="abstract futuristic" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
             </motion.div>
           </div>
         </motion.section>
@@ -98,16 +104,16 @@ export default function LandingPage() {
               Engineered for excellence. Every detail is optimized for a seamless experience.
             </motion.p>
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-              <motion.div variants={fadeIn} className="bg-secondary p-8 rounded-lg text-left">
-                <h3 className="text-2xl font-bold">Cloud-Powered</h3>
+              <motion.div variants={fadeIn} className="glass-card p-8 rounded-lg text-left transition-transform transform hover:-translate-y-2">
+                <h3 className="text-2xl font-bold text-primary">Cloud-Powered</h3>
                 <p className="mt-2 text-muted-foreground">Upload your documents from anywhere and print them on any connected printer.</p>
               </motion.div>
-              <motion.div variants={fadeIn} className="bg-secondary p-8 rounded-lg text-left">
-                <h3 className="text-2xl font-bold">Pay & Go</h3>
+              <motion.div variants={fadeIn} className="glass-card p-8 rounded-lg text-left transition-transform transform hover:-translate-y-2">
+                <h3 className="text-2xl font-bold text-primary">Pay & Go</h3>
                 <p className="mt-2 text-muted-foreground">A simple and secure wallet system to pay for your print jobs instantly.</p>
               </motion.div>
-              <motion.div variants={fadeIn} className="bg-secondary p-8 rounded-lg text-left">
-                <h3 className="text-2xl font-bold">Real-time Tracking</h3>
+              <motion.div variants={fadeIn} className="glass-card p-8 rounded-lg text-left transition-transform transform hover:-translate-y-2">
+                <h3 className="text-2xl font-bold text-primary">Real-time Tracking</h3>
                 <p className="mt-2 text-muted-foreground">Monitor your print queue and get live status updates on all your jobs.</p>
               </motion.div>
             </div>
@@ -115,7 +121,7 @@ export default function LandingPage() {
         </motion.section>
 
         {/* Get Started Section */}
-        <motion.section id="get-started" className="py-20 md:py-32 bg-secondary"
+        <motion.section id="get-started" className="py-20 md:py-32 bg-secondary/50"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
@@ -127,7 +133,7 @@ export default function LandingPage() {
               Create an account and start printing in minutes. It's that easy.
             </motion.p>
              <motion.div variants={fadeIn} className="mt-8">
-                <Button size="lg" asChild>
+                <Button size="lg" asChild className="button-glow transition-all duration-300 transform hover:scale-105">
                     <Link href="/login">
                         Sign Up Now
                         <ArrowRight className="ml-2 h-4 w-4" />

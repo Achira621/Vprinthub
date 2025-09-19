@@ -8,27 +8,15 @@ import { Clock, Loader2, CheckCircle, AlertTriangle, FileText, RefreshCw } from 
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { AnimatePresence, motion } from 'framer-motion';
 
-const statusIcons: Record<PrintJobStatus, React.ReactElement> = {
-  'awaiting-payment': <Clock className="text-yellow-500" />,
-  'processing': <Loader2 className="text-primary animate-spin" />,
-  'completed': <CheckCircle className="text-green-500" />,
-  'failed': <AlertTriangle className="text-destructive" />,
+const statusConfig: Record<PrintJobStatus, { icon: React.ReactElement, text: string, badge: "default" | "secondary" | "destructive" | "outline", glow: string }> = {
+  'awaiting-payment': { icon: <Clock className="text-yellow-400" />, text: 'Awaiting Payment', badge: 'outline', glow: 'shadow-yellow-500/30' },
+  'processing': { icon: <Loader2 className="text-blue-400 animate-spin" />, text: 'Processing', badge: 'secondary', glow: 'shadow-blue-500/40' },
+  'completed': { icon: <CheckCircle className="text-green-400" />, text: 'Completed', badge: 'default', glow: 'shadow-green-500/50' },
+  'failed': { icon: <AlertTriangle className="text-red-400" />, text: 'Failed', badge: 'destructive', glow: 'shadow-red-500/40' },
 };
 
-const statusText: Record<PrintJobStatus, string> = {
-    'awaiting-payment': 'Awaiting Payment',
-    'processing': 'Processing',
-    'completed': 'Completed',
-    'failed': 'Failed',
-  };
-
-const statusBadgeVariant: Record<PrintJobStatus, "default" | "secondary" | "destructive" | "outline"> = {
-    'awaiting-payment': 'outline',
-    'processing': 'secondary',
-    'completed': 'default',
-    'failed': 'destructive',
-}
 
 export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   const [jobs, setJobs] = useState<PrintJob[]>(initialJobs);
@@ -47,51 +35,63 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   }
 
   useEffect(() => {
-    fetchJobs(); // Initial fetch
-    const intervalId = setInterval(fetchJobs, 5000); // Poll for new jobs
+    fetchJobs(); 
+    const intervalId = setInterval(fetchJobs, 5000);
     return () => clearInterval(intervalId);
   }, []);
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="glass-card flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between">
         <div className='space-y-1.5'>
             <CardTitle>Print Queue</CardTitle>
             <CardDescription>Real-time status of your print jobs.</CardDescription>
         </div>
-        <Button variant="ghost" size="icon" onClick={fetchJobs} disabled={isLoading}>
+        <Button variant="ghost" size="icon" onClick={fetchJobs} disabled={isLoading} className="hover:bg-white/10">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-auto">
         {jobs.length > 0 ? (
           <ul className="space-y-3">
-            {jobs.map((job) => (
-              <li key={job.id} className="flex items-start gap-4 p-3 bg-secondary/50 rounded-lg">
-                <div className="mt-1 h-5 w-5 flex items-center justify-center">{statusIcons[job.status]}</div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <p className="font-semibold truncate pr-2">{job.fileName}</p>
-                    <Badge variant={statusBadgeVariant[job.status]} className="capitalize">
-                        {statusText[job.status]}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-muted-foreground flex items-center justify-between mt-1">
-                    <span>
-                        {job.copies} {job.copies > 1 ? 'copies' : 'copy'} &bull; ₹{job.cost.toFixed(2)}
-                    </span>
-                    <span className='text-xs'>
-                        {formatDistanceToNow(job.createdAt, { addSuffix: true })}
-                    </span>
-                  </div>
-                </div>
-              </li>
-            ))}
+             <AnimatePresence>
+                {jobs.map((job) => (
+                <motion.li 
+                    key={job.id} 
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-start gap-4 p-3 bg-black/20 rounded-lg border border-white/10 transition-shadow hover:shadow-lg"
+                >
+                    <div className={`mt-1 h-5 w-5 flex items-center justify-center rounded-full shadow-sm ${statusConfig[job.status].glow}`}>
+                        {statusConfig[job.status].icon}
+                    </div>
+                    <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                        <p className="font-semibold truncate pr-2">{job.fileName}</p>
+                        <Badge variant={statusConfig[job.status].badge} className="capitalize text-xs">
+                            {statusConfig[job.status].text}
+                        </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground flex items-center justify-between mt-1">
+                        <span>
+                            {job.copies} {job.copies > 1 ? 'copies' : 'copy'} &bull; ₹{job.cost.toFixed(2)}
+                        </span>
+                        <span className='text-xs'>
+                            {formatDistanceToNow(job.createdAt, { addSuffix: true })}
+                        </span>
+                    </div>
+                    </div>
+                </motion.li>
+                ))}
+            </AnimatePresence>
           </ul>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center py-8 px-4 border-2 border-dashed border-muted rounded-lg">
-            <FileText className="w-10 h-10 text-muted-foreground/70 mb-4" />
-            <p className="font-semibold">No Print Jobs Yet</p>
+          <div className="flex flex-col items-center justify-center text-center py-8 px-4 border-2 border-dashed border-white/10 rounded-lg h-full">
+            <FileText className="w-10 h-10 text-muted-foreground/50 mb-4" />
+            <p className="font-semibold text-foreground/80">No Print Jobs Yet</p>
             <p className="text-sm text-muted-foreground">Upload a document to get started.</p>
           </div>
         )}
