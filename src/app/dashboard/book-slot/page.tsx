@@ -9,6 +9,7 @@ import { Calendar as CalendarIcon, Clock, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { bookTimeSlot } from '@/lib/actions';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 // Generate time slots for a given day
 const generateTimeSlots = (date: Date) => {
@@ -32,6 +33,7 @@ export default function BookSlotPage() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const timeSlots = date ? generateTimeSlots(date) : [];
 
@@ -50,10 +52,16 @@ export default function BookSlotPage() {
       const result = await bookTimeSlot({ date, timeSlot: selectedSlot });
       if (result.success) {
         toast({
-          title: 'Slot Booked!',
-          description: `Your printing slot for ${format(date, 'PPP')} at ${selectedSlot} is confirmed.`,
+          title: 'Slot Reserved!',
+          description: `Your time slot for ${format(date, 'PPP')} at ${selectedSlot} is reserved. Please configure your print job.`,
         });
-        setSelectedSlot(null); // Reset selection
+        // Redirect to the print workflow, passing the slot info
+        const params = new URLSearchParams({
+            date: date.toISOString(),
+            slot: selectedSlot
+        });
+        router.push(`/dashboard/print?${params.toString()}`);
+
       } else {
         toast({
           variant: 'destructive',
@@ -78,10 +86,10 @@ export default function BookSlotPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CalendarIcon className="text-primary" />
-            Book a Printing Slot
+            Step 1: Book a Printing Slot
           </CardTitle>
           <CardDescription>
-            Reserve a time to use a campus printer. This helps avoid queues.
+            Reserve a time to use a campus printer. This helps avoid queues and ensures availability.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -89,8 +97,11 @@ export default function BookSlotPage() {
             <Calendar
               mode="single"
               selected={date}
-              onSelect={setDate}
-              disabled={(d) => d < new Date() || d > add(new Date(), {days: 14})}
+              onSelect={(d) => {
+                setDate(d);
+                setSelectedSlot(null); // Reset slot when date changes
+              }}
+              disabled={(d) => d < new Date(new Date().setHours(0,0,0,0)) || d > add(new Date(), {days: 14})}
               className="rounded-md border bg-black/20"
             />
           </div>
@@ -121,11 +132,11 @@ export default function BookSlotPage() {
                 {selectedSlot && date ? (
                     <p>Selected Slot: <span className="font-bold text-primary">{format(date, "do MMMM")} at {selectedSlot}</span></p>
                 ) : (
-                    <p className="text-muted-foreground">Select a date and time to book your slot.</p>
+                    <p className="text-muted-foreground">Select a date and time to reserve your slot.</p>
                 )}
             </div>
           <Button onClick={handleBooking} disabled={!selectedSlot || !date || isSubmitting} className="w-full sm:w-auto button-glow">
-            {isSubmitting ? 'Booking...' : 'Book Slot'}
+            {isSubmitting ? 'Reserving...' : 'Reserve & Proceed'}
             <Check className="ml-2 h-4 w-4"/>
           </Button>
         </CardFooter>

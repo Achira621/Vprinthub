@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { VPrintIcon } from "../icons";
-import { LayoutDashboard, Printer, History, Settings, LogOut, Wallet, QrCode } from "lucide-react";
+import { LayoutDashboard, Printer, History, Settings, LogOut, Wallet, QrCode, CalendarClock } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/dashboard/book-slot", icon: CalendarClock, label: "Book a Slot" },
     { href: "/dashboard/recharge-wallet", icon: Wallet, label: "Recharge Wallet" },
     { href: "/dashboard/qr-generator", icon: QrCode, label: "QR Generator" },
     { href: "#", icon: Printer, label: "Printers" },
@@ -32,7 +33,8 @@ export function DashboardSidebar() {
                         href={item.href}
                         className={cn(
                             "flex items-center gap-3 p-3 rounded-md text-muted-foreground transition-all hover:text-foreground hover:bg-white/5",
-                            pathname === item.href && "bg-primary/10 text-primary font-semibold shadow-[inset_2px_0_0_hsl(var(--primary))]"
+                            pathname.startsWith(item.href) && item.href !== '/dashboard' && "bg-primary/10 text-primary font-semibold shadow-[inset_2px_0_0_hsl(var(--primary))]",
+                            pathname === item.href && item.href === '/dashboard' && "bg-primary/10 text-primary font-semibold shadow-[inset_2px_0_0_hsl(var(--primary))]"
                         )}
                     >
                         <item.icon className="h-5 w-5" />

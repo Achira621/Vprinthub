@@ -35,8 +35,7 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   }
 
   useEffect(() => {
-    // Initial fetch is now handled by the server, so we only set up the interval
-    const intervalId = setInterval(fetchJobs, 5000); // Poll for updates every 5 seconds
+    const intervalId = setInterval(fetchJobs, 5000); 
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,12 +83,10 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
                                 {formatDistanceToNow(job.createdAt, { addSuffix: true })}
                             </span>
                         </div>
-                        {job.status !== 'awaiting-payment' && job.completionTime && (
-                             <div className="text-xs text-primary/80 flex items-center gap-1.5 mt-2 pt-2 border-t border-white/5">
-                                <CalendarClock className="h-3.5 w-3.5" />
-                                Ready by: {format(job.completionTime, 'h:mm a')}
-                            </div>
-                        )}
+                         <div className="text-xs text-primary/80 flex items-center gap-1.5 mt-2 pt-2 border-t border-white/5">
+                            <CalendarClock className="h-3.5 w-3.5" />
+                            Slot: {format(job.bookedDate, 'EEE, h:mm a')}
+                        </div>
                     </div>
                 </motion.li>
                 ))}

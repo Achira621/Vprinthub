@@ -12,7 +12,8 @@ export type PrintJob = {
   cost: number;
   status: PrintJobStatus;
   createdAt: Date;
-  completionTime: Date;
+  bookedDate: Date;
+  bookedSlot: string;
 };
 
 export type TimeSlotBooking = {

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,10 +13,12 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { createPrintJob, payForPrintJob } from '@/lib/actions';
 import { PaperSize, PrintJob } from '@/lib/types';
-import { UploadCloud, FileText, Wallet, Loader2, QrCode, CalendarClock } from 'lucide-react';
+import { UploadCloud, FileText, Wallet, Loader2, QrCode, CalendarClock, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeDialog } from './QRCodeDialog';
 import { format } from 'date-fns';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -32,7 +34,13 @@ type PrintConfig = z.infer<typeof printConfigSchema>;
 
 type WorkflowStep = 'upload' | 'configure' | 'payment';
 
-export function PrintWorkflow() {
+
+function PrintWorkflowComponent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const dateParam = searchParams.get('date');
+  const slotParam = searchParams.get('slot');
+
   const [step, setStep] = useState<WorkflowStep>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [cost, setCost] = useState(0);
@@ -40,6 +48,20 @@ export function PrintWorkflow() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isQrVisible, setIsQrVisible] = useState(false);
   const { toast } = useToast();
+
+  const bookedDate = dateParam ? new Date(dateParam) : null;
+  const bookedSlot = slotParam;
+
+  useEffect(() => {
+    if (!bookedDate || !bookedSlot) {
+        router.replace('/dashboard/book-slot');
+        toast({
+            variant: 'destructive',
+            title: 'No Time Slot Selected',
+            description: 'Please book a time slot before configuring your print job.',
+        });
+    }
+  }, [bookedDate, bookedSlot, router, toast]);
 
   const { control, watch, handleSubmit, formState: { errors } } = useForm<PrintConfig>({
     resolver: zodResolver(printConfigSchema),
@@ -74,10 +96,16 @@ export function PrintWorkflow() {
   };
 
   const onConfigureSubmit = async (data: PrintConfig) => {
-    if (!file) return;
+    if (!file || !bookedDate || !bookedSlot) return;
     setIsSubmitting(true);
     try {
-      const jobData = { ...data, fileName: file.name, cost: calculateCost(data) };
+      const jobData = { 
+          ...data, 
+          fileName: file.name, 
+          cost: calculateCost(data),
+          bookedDate,
+          bookedSlot
+      };
       const newJob = await createPrintJob(jobData);
       setActiveJob(newJob);
       setStep('payment');
@@ -136,9 +164,7 @@ export function PrintWorkflow() {
 
 
   const resetWorkflow = () => {
-    setFile(null);
-    setStep('upload');
-    setActiveJob(null);
+    router.push('/dashboard');
   };
   
   const stepVariants = {
@@ -146,6 +172,14 @@ export function PrintWorkflow() {
     visible: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: 30 },
   };
+
+  if (!bookedDate || !bookedSlot) {
+    return (
+        <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <Card className="overflow-hidden glass-card">
@@ -161,8 +195,10 @@ export function PrintWorkflow() {
           {step === 'upload' && (
             <div>
               <CardHeader>
-                <CardTitle>Start a New Print Job</CardTitle>
-                <CardDescription>Upload your document to begin.</CardDescription>
+                <CardTitle>Step 2: Upload Your Document</CardTitle>
+                <CardDescription>
+                    Your time slot is <span className="text-primary font-bold">{format(bookedDate, "PPP")} at {bookedSlot}</span>. Now, upload your document.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <label 
@@ -180,13 +216,20 @@ export function PrintWorkflow() {
                   <input id="file-upload" type="file" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} accept={ACCEPTED_FILE_TYPES.join(',')} />
                 </label>
               </CardContent>
+              <CardFooter>
+                 <Button variant="outline" asChild className="border-white/20 hover:bg-white/10">
+                    <Link href="/dashboard/book-slot">
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Change Time Slot
+                    </Link>
+                </Button>
+              </CardFooter>
             </div>
           )}
 
           {step === 'configure' && file && (
             <form onSubmit={handleSubmit(onConfigureSubmit)}>
               <CardHeader>
-                <CardTitle>Configure Your Print</CardTitle>
+                <CardTitle>Step 3: Configure Your Print</CardTitle>
                 <CardDescription>Adjust the settings for your document.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -230,9 +273,9 @@ export function PrintWorkflow() {
                     Cost: <span className="text-primary">₹{cost.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" type="button" onClick={resetWorkflow} className="border-white/20 hover:bg-white/10">Cancel</Button>
+                    <Button variant="outline" type="button" onClick={() => setStep('upload')} className="border-white/20 hover:bg-white/10">Back</Button>
                     <Button type="submit" disabled={isSubmitting} className="button-glow">
-                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Proceed"}
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : "Proceed to Payment"}
                     </Button>
                 </div>
               </CardFooter>
@@ -242,7 +285,7 @@ export function PrintWorkflow() {
           {step === 'payment' && activeJob && (
              <div>
                 <CardHeader>
-                  <CardTitle>Complete Your Payment</CardTitle>
+                  <CardTitle>Step 4: Complete Your Payment</CardTitle>
                   <CardDescription>Your print job is ready. Pay to start printing.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -250,8 +293,8 @@ export function PrintWorkflow() {
                     <div className="flex justify-between"><span className="text-muted-foreground">Document:</span> <span className="font-semibold">{activeJob.fileName}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Copies:</span> <span className="font-semibold">{activeJob.copies}</span></div>
                      <div className="flex justify-between items-center pt-2 mt-2 border-t border-white/10">
-                        <span className="text-muted-foreground flex items-center gap-2"><CalendarClock className="h-4 w-4"/> Est. Completion:</span>
-                        <span className="font-semibold text-primary">{format(activeJob.completionTime, 'EEE, h:mm a')}</span>
+                        <span className="text-muted-foreground flex items-center gap-2"><CalendarClock className="h-4 w-4"/> Booked Slot:</span>
+                        <span className="font-semibold text-primary">{format(activeJob.bookedDate, 'EEE, h:mm a')}</span>
                     </div>
                     <div className="flex justify-between text-2xl font-bold pt-2">
                       <span>Total:</span> <span className="text-primary">₹{activeJob.cost.toFixed(2)}</span>
@@ -282,3 +325,9 @@ export function PrintWorkflow() {
     </Card>
   );
 }
+
+export const PrintWorkflow = () => (
+    <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin text-primary" />}>
+        <PrintWorkflowComponent />
+    </Suspense>
+);
