@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { createPrintJob, payForPrintJob } from '@/lib/actions';
 import { PaperSize, PrintJob } from '@/lib/types';
-import { UploadCloud, FileText, Printer, Wallet, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { UploadCloud, FileText, Printer, Wallet, Loader2, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -46,14 +46,14 @@ export function PrintWorkflow() {
   const configValues = watch();
 
   const calculateCost = ({ copies, pages, isColor }: PrintConfig) => {
-    const baseCostPerPage = 0.10;
-    const colorPremium = isColor ? 0.15 : 0;
+    const baseCostPerPage = 5; // ₹5 per page
+    const colorPremium = isColor ? 10 : 0; // ₹10 extra for color
     return (baseCostPerPage + colorPremium) * pages * copies;
   };
-  
-  useState(() => {
+
+  useEffect(() => {
     setCost(calculateCost(configValues));
-  });
+  }, [configValues]);
   
   const handleFileChange = (selectedFile: File | null) => {
     if (selectedFile) {
@@ -205,7 +205,7 @@ export function PrintWorkflow() {
               </CardContent>
               <CardFooter className="flex justify-between items-center bg-secondary/50">
                 <div className="text-lg font-bold">
-                    Estimated Cost: <span className="text-primary">${calculateCost(configValues).toFixed(2)}</span>
+                    Estimated Cost: <span className="text-primary">₹{cost.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" type="button" onClick={resetWorkflow}>Cancel</Button>
@@ -231,7 +231,7 @@ export function PrintWorkflow() {
                     <div className="flex justify-between"><span className="text-muted-foreground">Print Type:</span> <span className="font-semibold">{activeJob.isColor ? 'Color' : 'Black & White'}</span></div>
                   </div>
                   <div className="text-2xl font-bold text-center py-4">
-                    Total Amount: <span className="text-primary">${activeJob.cost.toFixed(2)}</span>
+                    Total Amount: <span className="text-primary">₹{activeJob.cost.toFixed(2)}</span>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">

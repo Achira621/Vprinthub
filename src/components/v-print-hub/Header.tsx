@@ -1,6 +1,5 @@
 'use client';
 import { VPrintIcon } from "@/components/icons";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getWalletBalance } from "@/lib/actions";
 import { Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -25,7 +24,7 @@ export function Header() {
                 <div className="flex items-center gap-2">
                     <Wallet className="w-5 h-5 text-muted-foreground" />
                     <span className="font-semibold text-foreground">
-                        {balance !== null ? `$${balance.toFixed(2)}` : '...'}
+                        {balance !== null ? `₹${balance.toFixed(2)}` : '...'}
                     </span>
                 </div>
             </div>

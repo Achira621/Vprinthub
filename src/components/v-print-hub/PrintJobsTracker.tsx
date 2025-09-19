@@ -40,7 +40,6 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   }
 
   useEffect(() => {
-    // Poll for updates every 5 seconds to simulate real-time tracking
     const intervalId = setInterval(fetchJobs, 5000);
     return () => clearInterval(intervalId);
   }, []);
@@ -71,7 +70,7 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
                   </div>
                   <div className="text-sm text-muted-foreground flex items-center justify-between mt-1">
                     <span>
-                        {job.copies} {job.copies > 1 ? 'copies' : 'copy'} &bull; ${job.cost.toFixed(2)}
+                        {job.copies} {job.copies > 1 ? 'copies' : 'copy'} &bull; ₹{job.cost.toFixed(2)}
                     </span>
                     <span className='text-xs'>
                         {formatDistanceToNow(job.createdAt, { addSuffix: true })}

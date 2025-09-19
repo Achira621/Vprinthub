@@ -13,7 +13,7 @@ let jobs: PrintJob[] = [
         pages: 10,
         isColor: false,
         paperSize: 'A4',
-        cost: 1.00,
+        cost: 50.00,
         status: 'completed',
         createdAt: new Date(Date.now() - 1000 * 60 * 5),
     },
@@ -24,12 +24,12 @@ let jobs: PrintJob[] = [
         pages: 2,
         isColor: true,
         paperSize: 'Letter',
-        cost: 2.50,
+        cost: 150.00,
         status: 'processing',
         createdAt: new Date(Date.now() - 1000 * 60 * 2),
     },
 ];
-let walletBalance = 25.75;
+let walletBalance = 2500.00;
 
 
 // Simulate network latency
@@ -52,9 +52,6 @@ export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'cre
     createdAt: new Date(),
   };
 
-  // TODO: Replace with actual Firestore write
-  // e.g., const docRef = await db.collection('printJobs').add(newJob);
-  // return { ...newJob, id: docRef.id };
   jobs.push(newJob);
   revalidatePath('/');
   return newJob;
@@ -72,12 +69,11 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
     if (walletBalance < job.cost) {
       return { success: false, message: 'Insufficient wallet balance.' };
     }
-    // TODO: Update wallet balance in Firestore
     walletBalance -= job.cost;
   }
   
-  // TODO: Update job status in Firestore
-  // e.g., await db.collection('printJobs').doc(jobId).update({ status: 'processing' });
+  // In a real app, you would have a webhook from the payment provider (like UPI)
+  // that would update the job status. For now, we'll just move it to processing.
   job.status = 'processing';
   
   // Simulate job completion
@@ -95,7 +91,6 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
 
 export async function getWalletBalance(): Promise<number> {
     await sleep(200);
-    // TODO: fetch from firestore
     return walletBalance;
 }
 
