@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { VPrintIcon } from '@/components/icons';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -21,6 +22,12 @@ const stagger = {
 };
 
 export default function LandingPage() {
+  const [year, setYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+  
   return (
     <div className="bg-background text-foreground min-h-screen flex flex-col font-sans">
       <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-background/80 border-b border-border">
@@ -148,7 +155,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between p-8 gap-4">
           <div className="flex items-center gap-2">
             <VPrintIcon className="w-5 h-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} V-Print. All Rights Reserved.</span>
+            {year && <span className="text-sm text-muted-foreground">&copy; {year} V-Print. All Rights Reserved.</span>}
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">Login</Link>
