@@ -11,18 +11,18 @@ export function Header() {
     const prevBalanceRef = useRef<number | null>(null);
     const balanceSpanRef = useRef<HTMLSpanElement>(null);
 
-    const fetchBalance = () => {
-        getWalletBalance().then(newBalance => {
-            prevBalanceRef.current = balance;
-            setBalance(newBalance);
-        });
-    };
-
     useEffect(() => {
+        const fetchBalance = () => {
+            getWalletBalance().then(newBalance => {
+                prevBalanceRef.current = balance;
+                setBalance(newBalance);
+            });
+        };
+
         fetchBalance();
         const interval = setInterval(fetchBalance, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [balance]);
 
     useEffect(() => {
         if (balance !== null && prevBalanceRef.current !== null && balance !== prevBalanceRef.current && balanceSpanRef.current) {
