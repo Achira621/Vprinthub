@@ -24,7 +24,7 @@ export function ContextualQA() {
     const [state, formAction] = useActionState(askDocumentQuestion, { answer: '' });
 
     return (
-        <Card>
+        <Card className="bg-card border-border">
             <form ref={formRef} action={async (formData) => {
                 formAction(formData);
                 formRef.current?.reset();
@@ -58,8 +58,8 @@ export function ContextualQA() {
                     )}
                 </CardContent>
             </form>
-            <CardFooter>
-                <Alert variant="default" className="text-xs">
+             <CardFooter>
+                <Alert variant="default" className="text-xs bg-secondary border-none">
                     <Info className="h-4 w-4" />
                     <AlertTitle>Demo Note</AlertTitle>
                     <AlertDescription>

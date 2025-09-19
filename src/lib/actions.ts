@@ -5,46 +5,20 @@ import { PrintJob } from './types';
 import { contextualDocumentQA, ContextualDocumentQAInput } from '@/ai/flows/contextual-document-qa';
 
 // In-memory store to simulate a database
-let jobs: PrintJob[] = [
-    {
-        id: 'job-1',
-        fileName: 'Initial-Document.pdf',
-        copies: 1,
-        pages: 10,
-        isColor: false,
-        paperSize: 'A4',
-        cost: 50.00,
-        status: 'completed',
-        createdAt: new Date(Date.now() - 1000 * 60 * 5),
-    },
-    {
-        id: 'job-2',
-        fileName: 'Project-Proposal.docx',
-        copies: 5,
-        pages: 2,
-        isColor: true,
-        paperSize: 'Letter',
-        cost: 150.00,
-        status: 'processing',
-        createdAt: new Date(Date.now() - 1000 * 60 * 2),
-    },
-];
-let walletBalance = 2500.00;
+let jobs: PrintJob[] = [];
+let walletBalance = 500.00;
 
 
 // Simulate network latency
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function getPrintJobs(): Promise<PrintJob[]> {
-  // TODO: Replace with actual Firestore query
-  // e.g., const snapshot = await db.collection('printJobs').orderBy('createdAt', 'desc').get();
-  // return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  await sleep(500);
+  await sleep(200);
   return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt'>): Promise<PrintJob> {
-  await sleep(1000);
+  await sleep(500);
   const newJob: PrintJob = {
     ...data,
     id: `job-${Date.now()}`,
@@ -52,13 +26,13 @@ export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'cre
     createdAt: new Date(),
   };
 
-  jobs.push(newJob);
-  revalidatePath('/');
+  jobs.unshift(newJob);
+  revalidatePath('/dashboard');
   return newJob;
 }
 
 export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): Promise<{ success: boolean, message: string }> {
-  await sleep(1500);
+  await sleep(1000);
   const job = jobs.find(j => j.id === jobId);
 
   if (!job) {
@@ -72,25 +46,25 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
     walletBalance -= job.cost;
   }
   
-  // In a real app, you would have a webhook from the payment provider (like UPI)
-  // that would update the job status. For now, we'll just move it to processing.
+  // With a real UPI integration, a webhook would update the status.
+  // Here, we just move it to processing.
   job.status = 'processing';
-  
-  // Simulate job completion
+  revalidatePath('/dashboard');
+
+  // Simulate job completion after a delay
   setTimeout(() => {
     const completedJob = jobs.find(j => j.id === jobId);
     if(completedJob) {
         completedJob.status = 'completed';
-        revalidatePath('/');
+        revalidatePath('/dashboard');
     }
-  }, 10000);
+  }, 10000 + Math.random() * 5000); // 10-15 second processing time
 
-  revalidatePath('/');
-  return { success: true, message: 'Payment successful! Your print job is now processing.' };
+  return { success: true, message: 'Payment successful!' };
 }
 
 export async function getWalletBalance(): Promise<number> {
-    await sleep(200);
+    await sleep(150);
     return walletBalance;
 }
 
@@ -109,9 +83,8 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
 
   try {
     const input: ContextualDocumentQAInput = {
-      // NOTE: In a real application, you would extract text from the uploaded document.
-      // For this scaffold, we're using a placeholder text.
-      documentContent: "V-Print Hub is a modern printing solution. The document has a file size of 2.4 MB. The margins are set to 1 inch on all sides. The content is clear and legible, using 12pt Times New Roman font. It contains 15 pages.",
+      // NOTE: For this demo, we're using placeholder text instead of extracting from a file.
+      documentContent: "V-Print Hub is a modern printing solution. The document has a file size of 2.4 MB, with 1-inch margins on all sides. It uses 12pt Times New Roman font across its 15 pages, ensuring clarity and legibility.",
       question,
     };
     

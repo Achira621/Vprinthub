@@ -46,8 +46,8 @@ export function PrintWorkflow() {
   const configValues = watch();
 
   const calculateCost = ({ copies, pages, isColor }: PrintConfig) => {
-    const baseCostPerPage = 5; // ₹5 per page
-    const colorPremium = isColor ? 10 : 0; // ₹10 extra for color
+    const baseCostPerPage = 2; // ₹2 per page B&W
+    const colorPremium = isColor ? 8 : 0; // ₹8 extra for color (total ₹10)
     return (baseCostPerPage + colorPremium) * pages * copies;
   };
 
@@ -95,7 +95,7 @@ export function PrintWorkflow() {
         toast({
           title: 'Payment Successful!',
           description: 'Your print job is now being processed.',
-          action: <div className="p-2 bg-green-500 text-white rounded-full"><CheckCircle className="h-5 w-5"/></div>,
+          action: <div className="p-1 bg-green-500 text-white rounded-full"><CheckCircle className="h-4 w-4"/></div>,
         });
         resetWorkflow();
       } else {
@@ -121,7 +121,7 @@ export function PrintWorkflow() {
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-card border-border">
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
@@ -139,17 +139,17 @@ export function PrintWorkflow() {
               </CardHeader>
               <CardContent>
                 <div 
-                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg hover:border-primary hover:bg-accent/10 transition-colors cursor-pointer"
+                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-muted rounded-lg hover:border-primary hover:bg-secondary/50 transition-colors cursor-pointer"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                         e.preventDefault();
                         handleFileChange(e.dataTransfer.files[0]);
                     }}
                 >
-                  <UploadCloud className="w-12 h-12 text-muted-foreground/50 mb-4" />
+                  <UploadCloud className="w-12 h-12 text-muted-foreground mb-4" />
                   <p className="font-semibold">Drag & drop your file here</p>
                   <p className="text-sm text-muted-foreground">or</p>
-                  <Button variant="link" asChild>
+                  <Button variant="link" asChild className="text-primary">
                     <label htmlFor="file-upload">
                         click to browse
                         <input id="file-upload" type="file" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} accept={ACCEPTED_FILE_TYPES.join(',')} />
@@ -203,7 +203,7 @@ export function PrintWorkflow() {
                     </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between items-center bg-secondary/50">
+              <CardFooter className="flex justify-between items-center bg-secondary">
                 <div className="text-lg font-bold">
                     Estimated Cost: <span className="text-primary">₹{cost.toFixed(2)}</span>
                 </div>
@@ -224,7 +224,7 @@ export function PrintWorkflow() {
                   <CardDescription>Your print job is ready. Pay to start printing.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 bg-secondary rounded-lg space-y-2">
+                  <div className="p-4 bg-secondary rounded-lg space-y-2 border border-border">
                     <div className="flex justify-between"><span className="text-muted-foreground">Document:</span> <span className="font-semibold">{activeJob.fileName}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Copies:</span> <span className="font-semibold">{activeJob.copies}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Total Pages:</span> <span className="font-semibold">{activeJob.pages * activeJob.copies}</span></div>
@@ -234,14 +234,14 @@ export function PrintWorkflow() {
                     Total Amount: <span className="text-primary">₹{activeJob.cost.toFixed(2)}</span>
                   </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                    <Button size="lg" className="w-full bg-accent hover:bg-accent/90" onClick={() => handlePayment('upi')} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Printer className="mr-2"/> Pay with UPI</>}
+                <CardFooter className="flex flex-col gap-3">
+                    <Button size="lg" className="w-full bg-primary hover:bg-primary/90" onClick={() => handlePayment('upi')} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Printer className="mr-2 h-4 w-4"/> Pay with UPI</>}
                     </Button>
-                    <Button size="lg" className="w-full" onClick={() => handlePayment('wallet')} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Wallet className="mr-2"/> Pay from Wallet</>}
+                    <Button size="lg" variant="secondary" className="w-full" onClick={() => handlePayment('wallet')} disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="animate-spin"/> : <><Wallet className="mr-2 h-4 w-4"/> Pay from Wallet</>}
                     </Button>
-                    <Button variant="ghost" onClick={resetWorkflow} disabled={isSubmitting}>Cancel Order</Button>
+                    <Button variant="ghost" onClick={resetWorkflow} disabled={isSubmitting} className="mt-2">Cancel Order</Button>
                 </CardFooter>
             </div>
           )}

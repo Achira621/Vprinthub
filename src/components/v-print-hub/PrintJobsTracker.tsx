@@ -23,6 +23,13 @@ const statusText: Record<PrintJobStatus, string> = {
     'failed': 'Failed',
   };
 
+const statusBadgeVariant: Record<PrintJobStatus, "default" | "secondary" | "destructive" | "outline"> = {
+    'awaiting-payment': 'outline',
+    'processing': 'secondary',
+    'completed': 'default',
+    'failed': 'destructive',
+}
+
 export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   const [jobs, setJobs] = useState<PrintJob[]>(initialJobs);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,12 +47,13 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
   }
 
   useEffect(() => {
-    const intervalId = setInterval(fetchJobs, 5000);
+    fetchJobs(); // Initial fetch
+    const intervalId = setInterval(fetchJobs, 5000); // Poll for new jobs
     return () => clearInterval(intervalId);
   }, []);
 
   return (
-    <Card>
+    <Card className="bg-card border-border">
       <CardHeader className="flex flex-row items-center justify-between">
         <div className='space-y-1.5'>
             <CardTitle>Print Queue</CardTitle>
@@ -57,14 +65,14 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
       </CardHeader>
       <CardContent>
         {jobs.length > 0 ? (
-          <ul className="space-y-4">
+          <ul className="space-y-3">
             {jobs.map((job) => (
               <li key={job.id} className="flex items-start gap-4 p-3 bg-secondary/50 rounded-lg">
-                <div className="mt-1">{statusIcons[job.status]}</div>
+                <div className="mt-1 h-5 w-5 flex items-center justify-center">{statusIcons[job.status]}</div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <p className="font-semibold truncate pr-2">{job.fileName}</p>
-                    <Badge variant={job.status === 'completed' ? 'default' : 'secondary'} className="capitalize bg-primary/10 text-primary-foreground">
+                    <Badge variant={statusBadgeVariant[job.status]} className="capitalize">
                         {statusText[job.status]}
                     </Badge>
                   </div>
@@ -81,8 +89,8 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
             ))}
           </ul>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center py-8 px-4 border-2 border-dashed rounded-lg">
-            <FileText className="w-10 h-10 text-muted-foreground/50 mb-4" />
+          <div className="flex flex-col items-center justify-center text-center py-8 px-4 border-2 border-dashed border-muted rounded-lg">
+            <FileText className="w-10 h-10 text-muted-foreground/70 mb-4" />
             <p className="font-semibold">No Print Jobs Yet</p>
             <p className="text-sm text-muted-foreground">Upload a document to get started.</p>
           </div>
