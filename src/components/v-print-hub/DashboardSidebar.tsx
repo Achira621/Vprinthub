@@ -1,14 +1,16 @@
-"use client";
+'use client';
 
 import Link from "next/link";
 import { VPrintIcon } from "../icons";
-import { LayoutDashboard, Printer, History, Settings, LogOut, Wallet } from "lucide-react";
+import { LayoutDashboard, Printer, History, Settings, LogOut, Wallet, CalendarCheck, QrCode } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/dashboard/book-slot", icon: CalendarCheck, label: "Book Slot"},
     { href: "/dashboard/recharge-wallet", icon: Wallet, label: "Recharge Wallet" },
+    { href: "/dashboard/qr-generator", icon: QrCode, label: "QR Generator" },
     { href: "#", icon: Printer, label: "Printers" },
     { href: "#", icon: History, label: "History" },
     { href: "#", icon: Settings, label: "Settings" },

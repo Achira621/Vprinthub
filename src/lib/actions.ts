@@ -1,11 +1,12 @@
-"use server";
+'use server';
 
 import { revalidatePath } from 'next/cache';
-import { PrintJob } from './types';
+import { PrintJob, TimeSlotBooking } from './types';
 import { contextualDocumentQA, ContextualDocumentQAInput } from '@/ai/flows/contextual-document-qa';
 
 // In-memory store to simulate a database
 let jobs: PrintJob[] = [];
+let bookings: TimeSlotBooking[] = [];
 let walletBalance = 500.00;
 
 
@@ -95,4 +96,29 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
     console.error(e);
     return { error: 'An error occurred while communicating with the AI. Please try again.' };
   }
+}
+
+export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Promise<{ success: boolean; message: string }> {
+  await sleep(700);
+
+  const existingBooking = bookings.find(
+    (b) => b.date.toDateString() === data.date.toDateString() && b.timeSlot === data.timeSlot
+  );
+
+  if (existingBooking) {
+    return { success: false, message: 'This time slot is already booked. Please choose another.' };
+  }
+
+  const newBooking: TimeSlotBooking = {
+    id: `booking-${Date.now()}`,
+    userId: 'user-123', // Placeholder user ID
+    date: data.date,
+    timeSlot: data.timeSlot,
+    createdAt: new Date(),
+  };
+
+  bookings.push(newBooking);
+  console.log('Current Bookings:', bookings);
+
+  return { success: true, message: 'Slot booked successfully!' };
 }
