@@ -22,8 +22,7 @@ export function DashboardSidebar() {
     return (
         <aside className="fixed top-0 left-0 z-30 h-screen w-64 hidden md:flex flex-col bg-secondary/30 backdrop-blur-md border-r border-white/10 p-4">
             <div className="flex items-center gap-2 p-4 mb-4">
-                <VPrintIcon className="w-8 h-8 text-primary" />
-                <span className="font-bold text-xl">V-Print Hub</span>
+                <VPrintIcon className="h-8" />
             </div>
             
             <nav className="flex flex-col gap-2 flex-1">

@@ -7,11 +7,16 @@ import Link from "next/link";
 
 export default function LoginPage() {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-secondary">
-            <Card className="w-full max-w-sm">
+        <div className="flex items-center justify-center min-h-screen bg-background relative">
+             <div className="absolute inset-0 z-0 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#00000d] via-[#02001c] to-[#00000d] animate-gradient-xy"></div>
+                <div className="absolute top-0 left-0 w-1/2 h-1/2 rounded-full bg-blue-500/10 blur-3xl animate-blob"></div>
+                <div className="absolute bottom-0 right-0 w-1/3 h-1/3 rounded-full bg-purple-500/10 blur-3xl animate-blob animation-delay-4000"></div>
+            </div>
+            <Card className="w-full max-w-sm glass-card z-10">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-4">
-                        <VPrintIcon className="w-10 h-10 text-primary" />
+                        <VPrintIcon className="h-10" />
                     </div>
                     <CardTitle>Welcome Back</CardTitle>
                     <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
@@ -19,15 +24,15 @@ export default function LoginPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="student@college.edu" required />
+                        <Input id="email" type="email" placeholder="student@college.edu" required className="bg-black/20 border-white/20" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" required />
+                        <Input id="password" type="password" required className="bg-black/20 border-white/20" />
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full" asChild>
+                    <Button className="w-full button-glow" asChild>
                         <Link href="/dashboard">Log In</Link>
                     </Button>
                      <p className="text-xs text-center text-muted-foreground">

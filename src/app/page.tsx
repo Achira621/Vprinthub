@@ -33,8 +33,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-background/80 border-b border-border">
         <div className="container mx-auto flex items-center justify-between p-4">
           <Link href="/" className="flex items-center gap-2">
-            <VPrintIcon className="w-7 h-7 text-primary" />
-            <span className="font-bold text-xl">V-Print</span>
+            <VPrintIcon className="h-8" />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link href="#about" className="text-sm font-medium hover:text-primary transition-colors">About</Link>
@@ -154,7 +153,7 @@ export default function LandingPage() {
       <footer className="border-t">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between p-8 gap-4">
           <div className="flex items-center gap-2">
-            <VPrintIcon className="w-5 h-5 text-muted-foreground" />
+            <VPrintIcon className="h-5 text-muted-foreground" />
             {year && <span className="text-sm text-muted-foreground">&copy; {year} V-Print. All Rights Reserved.</span>}
           </div>
           <div className="flex items-center gap-4">
