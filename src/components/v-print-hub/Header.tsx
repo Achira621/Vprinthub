@@ -46,7 +46,7 @@ export function Header() {
 
                 <div className="relative flex-1 max-w-xs ml-auto mr-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search jobs..." className="pl-10 bg-black/20 border-white/20 placeholder:text-muted-foreground/70" />
+                    <Input suppressHydrationWarning placeholder="Search jobs..." className="pl-10 bg-black/20 border-white/20 placeholder:text-muted-foreground/70" />
                 </div>
 
                 <div className="flex items-center gap-4">

@@ -47,7 +47,7 @@ export function PrintJobsTracker({ initialJobs }: { initialJobs: PrintJob[] }) {
             <CardTitle>Print Queue</CardTitle>
             <CardDescription>Real-time status of your print jobs.</CardDescription>
         </div>
-        <Button variant="ghost" size="icon" onClick={fetchJobs} disabled={isLoading} className="hover:bg-white/10">
+        <Button suppressHydrationWarning variant="ghost" size="icon" onClick={fetchJobs} disabled={isLoading} className="hover:bg-white/10">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
       </CardHeader>

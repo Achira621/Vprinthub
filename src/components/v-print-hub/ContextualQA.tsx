@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" disabled={pending} className="whitespace-nowrap button-glow transition-all duration-300 transform hover:scale-105">
+        <Button suppressHydrationWarning type="submit" disabled={pending} className="whitespace-nowrap button-glow transition-all duration-300 transform hover:scale-105">
             {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             Ask AI
         </Button>
@@ -39,6 +39,7 @@ export function ContextualQA() {
                 <CardContent className="space-y-4">
                     <div className="flex gap-2">
                         <Input
+                            suppressHydrationWarning
                             name="question"
                             placeholder="e.g., What is the file size?"
                             required
