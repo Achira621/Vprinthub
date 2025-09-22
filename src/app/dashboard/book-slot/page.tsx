@@ -1,11 +1,12 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { add, format, isPast } from 'date-fns';
-import { Calendar as CalendarIcon, Clock, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { bookTimeSlot } from '@/lib/actions';
 import { cn } from '@/lib/utils';
@@ -29,11 +30,16 @@ const generateTimeSlots = (date: Date) => {
 
 
 export default function BookSlotPage() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Set initial date on client-side to avoid hydration mismatch
+  useEffect(() => {
+    setDate(new Date());
+  }, []);
 
   const timeSlots = date ? generateTimeSlots(date) : [];
 
@@ -103,6 +109,7 @@ export default function BookSlotPage() {
               }}
               disabled={(d) => d < new Date(new Date().setHours(0,0,0,0)) || d > add(new Date(), {days: 14})}
               className="rounded-md border bg-black/20"
+              initialFocus
             />
           </div>
           <div className="space-y-4">
@@ -123,7 +130,13 @@ export default function BookSlotPage() {
                     >
                         {slot}
                     </Button>
-                )) : <p className="text-muted-foreground col-span-4">Please select a valid date.</p>}
+                )) : (
+                  date ? 
+                  <p className="text-muted-foreground col-span-4">No available slots for this day.</p> :
+                  <div className="col-span-4 flex items-center justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                )}
             </div>
           </div>
         </CardContent>
