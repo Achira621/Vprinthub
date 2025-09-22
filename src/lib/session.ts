@@ -11,7 +11,7 @@ const SESSION_COOKIE_NAME = 'v-print-hub-session';
  */
 export async function createSessionCookie(idToken: string) {
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
+    const sessionCookie = await auth().createSessionCookie(idToken, { expiresIn });
     cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
         maxAge: expiresIn,
         httpOnly: true,
@@ -36,7 +36,7 @@ export async function getSession(): Promise<DecodedIdToken | null> {
         return null;
     }
     try {
-        const decodedIdToken = await auth.verifySessionCookie(sessionCookie, true);
+        const decodedIdToken = await auth().verifySessionCookie(sessionCookie, true);
         return decodedIdToken;
     } catch (error) {
         console.error('Error verifying session cookie:', error);

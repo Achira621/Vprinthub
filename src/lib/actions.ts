@@ -4,7 +4,7 @@
 import { revalidatePath } from 'next/cache';
 import { PrintJob, TimeSlotBooking, PrintJobData } from './types';
 import { contextualDocumentQA, ContextualDocumentQAInput } from '@/ai/flows/contextual-document-qa';
-import { db, auth } from './firebase-admin';
+import { auth, db } from './firebase-admin';
 import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, getDoc, runTransaction, setDoc } from 'firebase/firestore';
 import { getSession } from './session';
 
@@ -33,7 +33,7 @@ export async function getPrintJobs(): Promise<PrintJob[]> {
   const session = await getSession();
   if (!session) return [];
   
-  const jobsCollection = collection(db, 'jobs');
+  const jobsCollection = collection(db(), 'jobs');
   const q = query(jobsCollection, where("userId", "==", session.uid));
   const querySnapshot = await getDocs(q);
   const jobs: PrintJob[] = [];
@@ -67,7 +67,7 @@ export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'cre
     bookedSlot: bookedSlot,
   };
 
-  const docRef = await addDoc(collection(db, 'jobs'), newJobData);
+  const docRef = await addDoc(collection(db(), 'jobs'), newJobData);
   
   revalidatePath('/dashboard');
   
@@ -84,7 +84,7 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
   const session = await getSession();
   if (!session) return { success: false, message: "User session not found. Cannot process payment." };
 
-  const jobRef = doc(db, 'jobs', jobId);
+  const jobRef = doc(db(), 'jobs', jobId);
 
   try {
     const jobDoc = await getDoc(jobRef);
@@ -94,8 +94,8 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
     const job = jobDoc.data() as PrintJobData;
 
     if (method === 'wallet') {
-        const walletRef = doc(db, 'wallets', session.uid); 
-        await runTransaction(db, async (transaction) => {
+        const walletRef = doc(db(), 'wallets', session.uid); 
+        await runTransaction(db(), async (transaction) => {
             const walletDoc = await transaction.get(walletRef);
             if (!walletDoc.exists() || walletDoc.data().balance < job.cost) {
                 throw new Error('Insufficient wallet balance.');
@@ -111,7 +111,7 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
     revalidatePath('/dashboard');
 
     setTimeout(async () => {
-        const completedJobRef = doc(db, 'jobs', jobId);
+        const completedJobRef = doc(db(), 'jobs', jobId);
         await updateDoc(completedJobRef, { status: 'completed' });
         revalidatePath('/dashboard');
     }, 5000);
@@ -128,7 +128,7 @@ export async function getWalletBalance(): Promise<number> {
     const session = await getSession();
     if (!session) return 0;
 
-    const walletRef = doc(db, 'wallets', session.uid);
+    const walletRef = doc(db(), 'wallets', session.uid);
     const docSnap = await getDoc(walletRef);
 
     if (docSnap.exists()) {
@@ -184,7 +184,7 @@ export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Prom
     return { success: false, message: "User session not found. Cannot book slot." };
   }
 
-  const bookingsCollection = collection(db, 'bookings');
+  const bookingsCollection = collection(db(), 'bookings');
   const q = query(
       bookingsCollection,
       where('date', '==', Timestamp.fromDate(new Date(data.date.setHours(0,0,0,0)))),
