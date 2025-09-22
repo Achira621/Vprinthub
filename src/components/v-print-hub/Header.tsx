@@ -1,5 +1,4 @@
 'use client';
-import { VPrintIcon } from "@/components/icons";
 import { getWalletBalance } from "@/lib/actions";
 import { Wallet, Search, User, Menu } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
@@ -8,13 +7,17 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { DashboardSidebar } from "./DashboardSidebar";
+import { useAuth } from "@/context/AuthContext";
 
 export function Header() {
     const [balance, setBalance] = useState<number | null>(null);
     const prevBalanceRef = useRef<number | null>(null);
     const balanceSpanRef = useRef<HTMLSpanElement>(null);
+    const { user } = useAuth();
 
     useEffect(() => {
+        if (!user) return;
+
         const fetchBalance = () => {
             getWalletBalance().then(newBalance => {
                 prevBalanceRef.current = balance;
@@ -25,7 +28,7 @@ export function Header() {
         fetchBalance();
         const interval = setInterval(fetchBalance, 5000);
         return () => clearInterval(interval);
-    }, [balance]);
+    }, [user, balance]);
 
     useEffect(() => {
         if (balance !== null && prevBalanceRef.current !== null && balance !== prevBalanceRef.current && balanceSpanRef.current) {
@@ -74,7 +77,7 @@ export function Header() {
                     </div>
 
                     <Avatar>
-                        <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" />
+                        <AvatarImage src={user?.photoURL || `https://i.pravatar.cc/150?u=${user?.uid}`} alt={user?.displayName || 'User'} />
                         <AvatarFallback><User/></AvatarFallback>
                     </Avatar>
                 </div>

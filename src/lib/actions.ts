@@ -4,9 +4,9 @@
 import { revalidatePath } from 'next/cache';
 import { PrintJob, TimeSlotBooking, PrintJobData } from './types';
 import { contextualDocumentQA, ContextualDocumentQAInput } from '@/ai/flows/contextual-document-qa';
-import { db } from './firebase';
+import { db, auth } from './firebase-admin';
 import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, getDoc, runTransaction, setDoc } from 'firebase/firestore';
-import { getSessionId } from './session';
+import { getSession } from './session';
 
 
 // Simulate network latency
@@ -18,6 +18,10 @@ function convertTimestamps<T>(docData: any): T {
     for (const key in data) {
         if (data[key] instanceof Timestamp) {
             data[key] = data[key].toDate();
+        } else if (Array.isArray(data[key])) {
+            data[key] = data[key].map(item => (item instanceof Timestamp ? item.toDate() : item));
+        } else if (typeof data[key] === 'object' && data[key] !== null) {
+            data[key] = convertTimestamps(data[key]);
         }
     }
     return data as T;
@@ -26,32 +30,37 @@ function convertTimestamps<T>(docData: any): T {
 
 export async function getPrintJobs(): Promise<PrintJob[]> {
   await sleep(200);
-  const userId = await getSessionId();
-  if (!userId) {
-      // This might happen on the very first server render before the client-side session is set.
-      // Returning an empty array is a safe fallback.
-      return [];
-  }
+  const session = await getSession();
+  if (!session) return [];
+  
   const jobsCollection = collection(db, 'jobs');
-  const q = query(jobsCollection, where("userId", "==", userId));
+  const q = query(jobsCollection, where("userId", "==", session.uid));
   const querySnapshot = await getDocs(q);
   const jobs: PrintJob[] = [];
   querySnapshot.forEach((doc) => {
-    jobs.push(convertTimestamps<PrintJob>({ id: doc.id, ...doc.data() }));
+    const data = doc.data();
+    // Manually convert Timestamps
+    const jobData = {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt.toDate(),
+        bookedDate: data.bookedDate.toDate(),
+    } as PrintJob;
+    jobs.push(jobData);
   });
   return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt' | 'userId'> & { bookedDate: Date; bookedSlot: string }): Promise<PrintJob> {
   await sleep(500);
-  const userId = await getSessionId();
-  if (!userId) throw new Error("User session not found. Cannot create job.");
+  const session = await getSession();
+  if (!session) throw new Error("User session not found. Cannot create job.");
   
   const { bookedDate, bookedSlot, ...jobData } = data;
 
   const newJobData = {
     ...jobData,
-    userId,
+    userId: session.uid,
     status: 'awaiting-payment',
     createdAt: Timestamp.fromDate(new Date()),
     bookedDate: Timestamp.fromDate(bookedDate),
@@ -72,19 +81,20 @@ export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'cre
 
 export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): Promise<{ success: boolean, message: string }> {
   await sleep(1000);
+  const session = await getSession();
+  if (!session) return { success: false, message: "User session not found. Cannot process payment." };
+
   const jobRef = doc(db, 'jobs', jobId);
-  const userId = await getSessionId();
-  if (!userId) return { success: false, message: "User session not found. Cannot process payment." };
 
   try {
     const jobDoc = await getDoc(jobRef);
-    if (!jobDoc.exists()) {
-        return { success: false, message: 'Print job not found.' };
+    if (!jobDoc.exists() || jobDoc.data().userId !== session.uid) {
+        return { success: false, message: 'Print job not found or you do not have permission to pay for it.' };
     }
     const job = jobDoc.data() as PrintJobData;
 
     if (method === 'wallet') {
-        const walletRef = doc(db, 'wallets', userId); 
+        const walletRef = doc(db, 'wallets', session.uid); 
         await runTransaction(db, async (transaction) => {
             const walletDoc = await transaction.get(walletRef);
             if (!walletDoc.exists() || walletDoc.data().balance < job.cost) {
@@ -115,22 +125,19 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
 
 export async function getWalletBalance(): Promise<number> {
     await sleep(150);
-    const userId = await getSessionId();
-    if (!userId) {
-        // Before the client-side session is created, we can't know the balance.
-        return 0;
-    }
+    const session = await getSession();
+    if (!session) return 0;
 
-    const walletRef = doc(db, 'wallets', userId);
+    const walletRef = doc(db, 'wallets', session.uid);
     const docSnap = await getDoc(walletRef);
 
     if (docSnap.exists()) {
         return docSnap.data().balance;
     } else {
-        // Create wallet if it doesn't exist for the demo user
+        // Create wallet if it doesn't exist for the user
         const newWallet = {
             balance: 500.00,
-            userId: userId,
+            userId: session.uid,
             createdAt: Timestamp.now()
         };
         await setDoc(walletRef, newWallet);
@@ -144,6 +151,9 @@ type AskDocumentQuestionState = {
 }
 export async function askDocumentQuestion(prevState: AskDocumentQuestionState, formData: FormData): Promise<AskDocumentQuestionState> {
   const question = formData.get('question') as string;
+
+  const session = await getSession();
+  if (!session) return { error: 'You must be logged in to use this feature.' };
 
   if (!question.trim()) {
     return { error: 'Please enter a question.' };
@@ -169,8 +179,8 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
 
 export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Promise<{ success: boolean; message: string }> {
   await sleep(700);
-  const userId = await getSessionId();
-  if (!userId) {
+  const session = await getSession();
+  if (!session) {
     return { success: false, message: "User session not found. Cannot book slot." };
   }
 
@@ -188,7 +198,7 @@ export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Prom
   }
 
   const newBooking: Omit<TimeSlotBooking, 'id'> = {
-    userId: userId, 
+    userId: session.uid, 
     date: Timestamp.fromDate(data.date),
     timeSlot: data.timeSlot,
     createdAt: Timestamp.fromDate(new Date()),

@@ -12,27 +12,36 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { register } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (password !== confirmPassword) {
+            toast({
+                variant: 'destructive',
+                title: 'Registration Failed',
+                description: 'Passwords do not match.',
+            });
+            return;
+        }
         setIsLoading(true);
         try {
-            await login(email, password);
-            toast({ title: 'Login Successful', description: 'Welcome back!' });
+            await register(email, password);
+            toast({ title: 'Registration Successful', description: 'Welcome! You are now logged in.' });
             router.push('/dashboard');
         } catch (error: any) {
             console.error(error);
             toast({
                 variant: 'destructive',
-                title: 'Login Failed',
-                description: error.message || 'Please check your credentials and try again.',
+                title: 'Registration Failed',
+                description: error.message || 'An error occurred during registration.',
             });
         } finally {
             setIsLoading(false);
@@ -47,13 +56,13 @@ export default function LoginPage() {
                 <div className="absolute bottom-0 right-0 w-1/3 h-1/3 rounded-full bg-purple-500/10 blur-3xl animate-blob animation-delay-4000"></div>
             </div>
             <Card className="w-full max-w-sm glass-card z-10">
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleRegister}>
                     <CardHeader className="text-center">
                         <div className="flex justify-center mb-4">
                             <VPrintIcon className="h-10" />
                         </div>
-                        <CardTitle>Welcome Back</CardTitle>
-                        <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
+                        <CardTitle>Create an Account</CardTitle>
+                        <CardDescription>Join V-Print Hub to start printing.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
@@ -64,13 +73,17 @@ export default function LoginPage() {
                             <Label htmlFor="password">Password</Label>
                             <Input id="password" type="password" required className="bg-black/20 border-white/20" value={password} onChange={(e) => setPassword(e.target.value)} />
                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                            <Input id="confirm-password" type="password" required className="bg-black/20 border-white/20" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
                         <Button type="submit" className="w-full button-glow" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="animate-spin" /> : 'Log In'}
+                             {isLoading ? <Loader2 className="animate-spin" /> : 'Sign Up'}
                         </Button>
-                        <p className="text-xs text-center text-muted-foreground">
-                            Don't have an account? <Link href="/register" className="underline text-primary">Sign Up</Link>
+                         <p className="text-xs text-center text-muted-foreground">
+                            Already have an account? <Link href="/login" className="underline text-primary">Log In</Link>
                         </p>
                     </CardFooter>
                 </form>

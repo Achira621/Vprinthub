@@ -1,40 +1,45 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { v4 as uuidv4 } from 'uuid';
+import type { DecodedIdToken } from 'firebase-admin/auth';
+import { auth } from './firebase-admin';
 
-const COOKIE_NAME = 'v-print-hub-session-id';
+const SESSION_COOKIE_NAME = 'v-print-hub-session';
 
 /**
- * Gets the unique session ID for the current user from cookies.
- * This is a read-only function, safe to use in Server Components.
- * @returns The session ID string or null if not found.
+ * Creates a session cookie for the given user ID token.
  */
-export async function getSessionId(): Promise<string | null> {
-  const cookieStore = cookies();
-  return cookieStore.get(COOKIE_NAME)?.value || null;
+export async function createSessionCookie(idToken: string) {
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
+    cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
+        maxAge: expiresIn,
+        httpOnly: true,
+        secure: true,
+    });
 }
 
 /**
- * A Server Action to create a session cookie if one doesn't exist.
- * This should be called from the client-side (e.g., in a useEffect).
- * @returns The session ID (either existing or newly created).
+ * Revokes the session cookie, effectively logging the user out.
  */
-export async function createSession(): Promise<string> {
-  'use server';
+export async function revokeSessionCookie() {
+    cookies().delete(SESSION_COOKIE_NAME);
+}
 
-  const cookieStore = cookies();
-  let sessionId = cookieStore.get(COOKIE_NAME)?.value;
-
-  if (!sessionId) {
-    sessionId = uuidv4();
-    cookieStore.set(COOKIE_NAME, sessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7, // One week
-      path: '/',
-    });
-  }
-
-  return sessionId;
+/**
+ * Verifies the session cookie and returns the decoded token if valid.
+ * This is used in server-side logic to get the authenticated user.
+ */
+export async function getSession(): Promise<DecodedIdToken | null> {
+    const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
+    if (!sessionCookie) {
+        return null;
+    }
+    try {
+        const decodedIdToken = await auth.verifySessionCookie(sessionCookie, true);
+        return decodedIdToken;
+    } catch (error) {
+        console.error('Error verifying session cookie:', error);
+        return null;
+    }
 }

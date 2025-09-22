@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { VPrintIcon } from "../icons";
 import { LayoutDashboard, Printer, History, Settings, LogOut, Wallet, QrCode, CalendarClock } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -18,6 +20,19 @@ const navItems = [
 
 export function DashboardSidebar() {
     const pathname = usePathname();
+    const { logout } = useAuth();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
+            router.push('/login');
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Logout Failed', description: error.message });
+        }
+    };
 
     return (
         <aside className="fixed top-0 left-0 z-30 h-screen w-64 hidden md:flex flex-col bg-secondary/30 backdrop-blur-md border-r border-white/10 p-4">
@@ -43,13 +58,13 @@ export function DashboardSidebar() {
             </nav>
 
             <div>
-                <Link
-                    href="/"
-                    className="flex items-center gap-3 p-3 rounded-md text-muted-foreground transition-all hover:text-foreground hover:bg-white/5"
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 p-3 rounded-md text-muted-foreground transition-all hover:text-foreground hover:bg-white/5"
                 >
                     <LogOut className="h-5 w-5" />
                     <span>Logout</span>
-                </Link>
+                </button>
             </div>
         </aside>
     );

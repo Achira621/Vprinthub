@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // --- HOW TO CONFIGURE FIREBASE ---
 // 1. Go to https://console.firebase.google.com/ and create a new project.
@@ -12,6 +13,7 @@ import { getFirestore } from "firebase/firestore";
 // 6. In the Firebase Console, go to "Build" > "Firestore Database" and create a database.
 //    - Start in "test mode" for now. This allows your app to read and write freely.
 //    - For production, you will need to set up proper security rules.
+// 7. In the Firebase Console, go to "Build" > "Authentication" and enable the "Email/Password" sign-in method.
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -23,13 +25,8 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-// To prevent re-initialization on hot reloads, we check if an app is already initialized.
+// Initialize Firebase for client-side
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Cloud Firestore and get a reference to the service
+export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-// After configuring your .env file and restarting the server, 
-// your app will be connected to your live database. When you create a print job or book a slot,
-// you will see the data appear in the Firestore Database section of the Firebase Console.
