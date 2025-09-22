@@ -13,14 +13,15 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
 // Generate time slots for a given day
-const generateTimeSlots = (date: Date) => {
+const generateTimeSlots = (date: Date, isClient: boolean) => {
   const slots = [];
   const startOfDay = new Date(date);
   startOfDay.setHours(9, 0, 0, 0); // Start at 9:00 AM
 
   for (let i = 0; i < 36; i++) { // 9 hours * 4 slots/hour
     const slotTime = add(startOfDay, { minutes: i * 15 });
-    if (isPast(slotTime) && format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) {
+    // Only filter past slots on the client to prevent hydration mismatch
+    if (isClient && isPast(slotTime) && format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')) {
         continue; // Don't show past slots for today
     }
     slots.push(format(slotTime, 'HH:mm'));
@@ -33,15 +34,17 @@ export default function BookSlotPage() {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
-  // Set initial date on client-side to avoid hydration mismatch
+  // Set initial date and flag client-side render to avoid hydration mismatch
   useEffect(() => {
     setDate(new Date());
+    setIsClient(true);
   }, []);
 
-  const timeSlots = date ? generateTimeSlots(date) : [];
+  const timeSlots = date ? generateTimeSlots(date, isClient) : [];
 
   const handleBooking = async () => {
     if (!date || !selectedSlot) {
