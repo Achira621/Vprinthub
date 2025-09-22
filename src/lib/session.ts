@@ -12,7 +12,7 @@ const COOKIE_NAME = 'v-print-hub-session-id';
  * This function runs on the server.
  */
 export async function getSessionId(): Promise<string> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   let sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
   if (!sessionId) {
