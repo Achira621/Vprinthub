@@ -11,7 +11,7 @@ const COOKIE_NAME = 'v-print-hub-session-id';
  * @returns The session ID string or null if not found.
  */
 export async function getSessionId(): Promise<string | null> {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   return cookieStore.get(COOKIE_NAME)?.value || null;
 }
 
@@ -23,7 +23,7 @@ export async function getSessionId(): Promise<string | null> {
 export async function createSession(): Promise<string> {
   'use server';
 
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   let sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
   if (!sessionId) {
