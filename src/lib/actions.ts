@@ -26,6 +26,11 @@ function convertTimestamps<T>(docData: any): T {
 export async function getPrintJobs(): Promise<PrintJob[]> {
   await sleep(200);
   const userId = await getSessionId();
+  if (!userId) {
+      // This might happen on the very first server render before the client-side session is set.
+      // Returning an empty array is a safe fallback.
+      return [];
+  }
   const jobsCollection = collection(db, 'jobs');
   const q = query(jobsCollection, where("userId", "==", userId));
   const querySnapshot = await getDocs(q);
@@ -39,6 +44,8 @@ export async function getPrintJobs(): Promise<PrintJob[]> {
 export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt' | 'userId'> & { bookedDate: Date; bookedSlot: string }): Promise<PrintJob> {
   await sleep(500);
   const userId = await getSessionId();
+  if (!userId) throw new Error("User session not found. Cannot create job.");
+  
   const { bookedDate, bookedSlot, ...jobData } = data;
 
   const newJobData = {
@@ -66,6 +73,7 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
   await sleep(1000);
   const jobRef = doc(db, 'jobs', jobId);
   const userId = await getSessionId();
+  if (!userId) throw new Error("User session not found. Cannot process payment.");
 
   try {
     const jobDoc = await getDoc(jobRef);
@@ -107,6 +115,11 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
 export async function getWalletBalance(): Promise<number> {
     await sleep(150);
     const userId = await getSessionId();
+    if (!userId) {
+        // Before the client-side session is created, we can't know the balance.
+        return 0;
+    }
+
     const walletRef = doc(db, 'wallets', userId);
     const docSnap = await getDoc(walletRef);
 
@@ -156,6 +169,7 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
 export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Promise<{ success: boolean; message: string }> {
   await sleep(700);
   const userId = await getSessionId();
+  if (!userId) throw new Error("User session not found. Cannot book slot.");
 
   const bookingsCollection = collection(db, 'bookings');
   const q = query(
