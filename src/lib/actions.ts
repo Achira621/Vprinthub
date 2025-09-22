@@ -1,75 +1,117 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { PrintJob, TimeSlotBooking } from './types';
+import { PrintJob, TimeSlotBooking, PrintJobData } from './types';
 import { contextualDocumentQA, ContextualDocumentQAInput } from '@/ai/flows/contextual-document-qa';
-
-// In-memory store to simulate a database
-let jobs: PrintJob[] = [];
-let bookings: TimeSlotBooking[] = [];
-let walletBalance = 500.00;
+import { db } from './firebase';
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
 
 
 // Simulate network latency
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Helper to convert Firestore Timestamps to Dates in objects
+function convertTimestamps<T>(docData: any): T {
+    const data = { ...docData };
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            data[key] = data[key].toDate();
+        }
+    }
+    return data as T;
+}
+
 
 export async function getPrintJobs(): Promise<PrintJob[]> {
   await sleep(200);
+  const jobsCollection = collection(db, 'jobs');
+  const q = query(jobsCollection); // In a real app, you'd filter by user ID
+  const querySnapshot = await getDocs(q);
+  const jobs: PrintJob[] = [];
+  querySnapshot.forEach((doc) => {
+    jobs.push(convertTimestamps<PrintJob>({ id: doc.id, ...doc.data() }));
+  });
   return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
-export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt' | 'completionTime'> & { bookedDate: Date; bookedSlot: string }): Promise<PrintJob> {
+export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt'> & { bookedDate: Date; bookedSlot: string }): Promise<PrintJob> {
   await sleep(500);
 
   const { bookedDate, bookedSlot, ...jobData } = data;
 
-  const newJob: PrintJob = {
+  const newJobData = {
     ...jobData,
-    id: `job-${Date.now()}`,
     status: 'awaiting-payment',
-    createdAt: new Date(),
-    bookedDate: bookedDate,
+    createdAt: Timestamp.fromDate(new Date()),
+    bookedDate: Timestamp.fromDate(bookedDate),
     bookedSlot: bookedSlot,
   };
 
-  jobs.unshift(newJob);
+  const docRef = await addDoc(collection(db, 'jobs'), newJobData);
+  
   revalidatePath('/dashboard');
-  return newJob;
+  return {
+    id: docRef.id,
+    ...convertTimestamps<PrintJobData>(newJobData)
+  };
 }
 
 export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): Promise<{ success: boolean, message: string }> {
   await sleep(1000);
-  const job = jobs.find(j => j.id === jobId);
-
-  if (!job) {
-    return { success: false, message: 'Print job not found.' };
-  }
-
-  if (method === 'wallet') {
-    if (walletBalance < job.cost) {
-      return { success: false, message: 'Insufficient wallet balance.' };
-    }
-    walletBalance -= job.cost;
-  }
+  const jobRef = doc(db, 'jobs', jobId);
   
-  job.status = 'processing';
-  revalidatePath('/dashboard');
-
-  setTimeout(() => {
-    const completedJob = jobs.find(j => j.id === jobId);
-    if(completedJob) {
-        completedJob.status = 'completed';
-        revalidatePath('/dashboard');
+  try {
+    const jobDoc = await getDoc(jobRef);
+    if (!jobDoc.exists()) {
+        return { success: false, message: 'Print job not found.' };
     }
-  }, 5000);
+    const job = jobDoc.data() as PrintJobData;
 
-  return { success: true, message: 'Payment successful!' };
+    if (method === 'wallet') {
+        const walletRef = doc(db, 'wallets', 'user-123-wallet'); // Hardcoded for demo
+        await runTransaction(db, async (transaction) => {
+            const walletDoc = await transaction.get(walletRef);
+            if (!walletDoc.exists() || walletDoc.data().balance < job.cost) {
+                throw new Error('Insufficient wallet balance.');
+            }
+            const newBalance = walletDoc.data().balance - job.cost;
+            transaction.update(walletRef, { balance: newBalance });
+            transaction.update(jobRef, { status: 'processing' });
+        });
+    } else {
+        await updateDoc(jobRef, { status: 'processing' });
+    }
+
+    revalidatePath('/dashboard');
+
+    setTimeout(async () => {
+        const completedJobRef = doc(db, 'jobs', jobId);
+        await updateDoc(completedJobRef, { status: 'completed' });
+        revalidatePath('/dashboard');
+    }, 5000);
+
+    return { success: true, message: 'Payment successful!' };
+
+  } catch (error: any) {
+    return { success: false, message: error.message || 'An error occurred during payment.' };
+  }
 }
 
 export async function getWalletBalance(): Promise<number> {
     await sleep(150);
-    return walletBalance;
+    const walletRef = doc(db, 'wallets', 'user-123-wallet'); // Hardcoded wallet for demo
+    const docSnap = await getDoc(walletRef);
+
+    if (docSnap.exists()) {
+        return docSnap.data().balance;
+    } else {
+        // Create wallet if it doesn't exist for the demo
+        await addDoc(collection(db, "wallets"), {
+            balance: 500.00,
+            userId: 'user-123'
+        });
+        return 500.00;
+    }
 }
 
 type AskDocumentQuestionState = {
@@ -104,24 +146,27 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
 export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Promise<{ success: boolean; message: string }> {
   await sleep(700);
 
-  const existingBooking = bookings.find(
-    (b) => b.date.toDateString() === data.date.toDateString() && b.timeSlot === data.timeSlot
+  const bookingsCollection = collection(db, 'bookings');
+  const q = query(
+      bookingsCollection,
+      where('bookedDate', '==', Timestamp.fromDate(new Date(data.date.setHours(0,0,0,0)))),
+      where('timeSlot', '==', data.timeSlot)
   );
+  
+  const querySnapshot = await getDocs(q);
 
-  if (existingBooking) {
+  if (!querySnapshot.empty) {
     return { success: false, message: 'This time slot is already booked. Please choose another.' };
   }
 
-  const newBooking: TimeSlotBooking = {
-    id: `booking-${Date.now()}`,
+  const newBooking: Omit<TimeSlotBooking, 'id'> = {
     userId: 'user-123', // Placeholder user ID
-    date: data.date,
+    date: Timestamp.fromDate(data.date),
     timeSlot: data.timeSlot,
-    createdAt: new Date(),
+    createdAt: Timestamp.fromDate(new Date()),
   };
 
-  bookings.push(newBooking);
-  console.log('Current Bookings:', bookings);
-
+  await addDoc(bookingsCollection, newBooking);
+  
   return { success: true, message: 'Slot booked successfully!' };
 }
