@@ -46,7 +46,7 @@ export function Header() {
                 <div className="flex items-center gap-4">
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="md:hidden hover:bg-white/10">
+                            <Button variant="ghost" size="icon" className="md:hidden hover:bg-white/10" suppressHydrationWarning>
                                 <Menu />
                             </Button>
                         </SheetTrigger>
