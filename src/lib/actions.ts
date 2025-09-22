@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { PrintJob, TimeSlotBooking, PrintJobData } from './types';
 import { contextualDocumentQA, ContextualDocumentQAInput } from '@/ai/flows/contextual-document-qa';
 import { db } from './firebase';
-import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, Timestamp, doc, updateDoc, getDoc, runTransaction, setDoc } from 'firebase/firestore';
+import { getSessionId } from './session';
 
 
 // Simulate network latency
@@ -24,8 +25,9 @@ function convertTimestamps<T>(docData: any): T {
 
 export async function getPrintJobs(): Promise<PrintJob[]> {
   await sleep(200);
+  const userId = getSessionId();
   const jobsCollection = collection(db, 'jobs');
-  const q = query(jobsCollection); // In a real app, you'd filter by user ID
+  const q = query(jobsCollection, where("userId", "==", userId));
   const querySnapshot = await getDocs(q);
   const jobs: PrintJob[] = [];
   querySnapshot.forEach((doc) => {
@@ -34,13 +36,14 @@ export async function getPrintJobs(): Promise<PrintJob[]> {
   return jobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
-export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt'> & { bookedDate: Date; bookedSlot: string }): Promise<PrintJob> {
+export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'createdAt' | 'userId'> & { bookedDate: Date; bookedSlot: string }): Promise<PrintJob> {
   await sleep(500);
-
+  const userId = getSessionId();
   const { bookedDate, bookedSlot, ...jobData } = data;
 
   const newJobData = {
     ...jobData,
+    userId,
     status: 'awaiting-payment',
     createdAt: Timestamp.fromDate(new Date()),
     bookedDate: Timestamp.fromDate(bookedDate),
@@ -50,16 +53,20 @@ export async function createPrintJob(data: Omit<PrintJob, 'id' | 'status' | 'cre
   const docRef = await addDoc(collection(db, 'jobs'), newJobData);
   
   revalidatePath('/dashboard');
-  return {
-    id: docRef.id,
-    ...convertTimestamps<PrintJobData>(newJobData)
+  
+  const createdJob = {
+      id: docRef.id,
+      ...convertTimestamps<Omit<PrintJob, 'id'>>(newJobData)
   };
+
+  return createdJob;
 }
 
 export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): Promise<{ success: boolean, message: string }> {
   await sleep(1000);
   const jobRef = doc(db, 'jobs', jobId);
-  
+  const userId = getSessionId();
+
   try {
     const jobDoc = await getDoc(jobRef);
     if (!jobDoc.exists()) {
@@ -68,7 +75,7 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
     const job = jobDoc.data() as PrintJobData;
 
     if (method === 'wallet') {
-        const walletRef = doc(db, 'wallets', 'user-123-wallet'); // Hardcoded for demo
+        const walletRef = doc(db, 'wallets', userId); 
         await runTransaction(db, async (transaction) => {
             const walletDoc = await transaction.get(walletRef);
             if (!walletDoc.exists() || walletDoc.data().balance < job.cost) {
@@ -99,17 +106,20 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
 
 export async function getWalletBalance(): Promise<number> {
     await sleep(150);
-    const walletRef = doc(db, 'wallets', 'user-123-wallet'); // Hardcoded wallet for demo
+    const userId = getSessionId();
+    const walletRef = doc(db, 'wallets', userId);
     const docSnap = await getDoc(walletRef);
 
     if (docSnap.exists()) {
         return docSnap.data().balance;
     } else {
-        // Create wallet if it doesn't exist for the demo
-        await addDoc(collection(db, "wallets"), {
+        // Create wallet if it doesn't exist for the demo user
+        const newWallet = {
             balance: 500.00,
-            userId: 'user-123'
-        });
+            userId: userId,
+            createdAt: Timestamp.now()
+        };
+        await setDoc(walletRef, newWallet);
         return 500.00;
     }
 }
@@ -145,11 +155,12 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
 
 export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Promise<{ success: boolean; message: string }> {
   await sleep(700);
+  const userId = getSessionId();
 
   const bookingsCollection = collection(db, 'bookings');
   const q = query(
       bookingsCollection,
-      where('bookedDate', '==', Timestamp.fromDate(new Date(data.date.setHours(0,0,0,0)))),
+      where('date', '==', Timestamp.fromDate(new Date(data.date.setHours(0,0,0,0)))),
       where('timeSlot', '==', data.timeSlot)
   );
   
@@ -160,7 +171,7 @@ export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Prom
   }
 
   const newBooking: Omit<TimeSlotBooking, 'id'> = {
-    userId: 'user-123', // Placeholder user ID
+    userId: userId, 
     date: Timestamp.fromDate(data.date),
     timeSlot: data.timeSlot,
     createdAt: Timestamp.fromDate(new Date()),

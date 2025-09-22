@@ -7,6 +7,7 @@ export type PaperSize = 'A4' | 'Letter';
 // Type for client-side use with Date objects
 export type PrintJob = {
   id: string;
+  userId: string;
   fileName: string;
   copies: number;
   pages: number;
@@ -27,7 +28,7 @@ export type PrintJobData = Omit<PrintJob, 'id' | 'createdAt' | 'bookedDate'> & {
 
 export type TimeSlotBooking = {
     id: string;
-    userId: string; // In a real app, this would be the logged-in user's ID
+    userId: string; 
     date: Timestamp;
     timeSlot: string;
     createdAt: Timestamp;
