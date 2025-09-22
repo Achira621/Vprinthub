@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -73,7 +74,7 @@ export async function payForPrintJob(jobId: string, method: 'wallet' | 'upi'): P
   await sleep(1000);
   const jobRef = doc(db, 'jobs', jobId);
   const userId = await getSessionId();
-  if (!userId) throw new Error("User session not found. Cannot process payment.");
+  if (!userId) return { success: false, message: "User session not found. Cannot process payment." };
 
   try {
     const jobDoc = await getDoc(jobRef);
@@ -169,7 +170,9 @@ export async function askDocumentQuestion(prevState: AskDocumentQuestionState, f
 export async function bookTimeSlot(data: { date: Date; timeSlot: string }): Promise<{ success: boolean; message: string }> {
   await sleep(700);
   const userId = await getSessionId();
-  if (!userId) throw new Error("User session not found. Cannot book slot.");
+  if (!userId) {
+    return { success: false, message: "User session not found. Cannot book slot." };
+  }
 
   const bookingsCollection = collection(db, 'bookings');
   const q = query(

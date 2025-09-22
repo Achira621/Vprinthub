@@ -79,7 +79,7 @@ export default function BookSlotPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'An unexpected error occurred.',
+        description: 'An unexpected error occurred during the request.',
       });
     } finally {
       setIsSubmitting(false);
@@ -104,8 +104,10 @@ export default function BookSlotPage() {
               mode="single"
               selected={date}
               onSelect={(d) => {
-                setDate(d);
-                setSelectedSlot(null); // Reset slot when date changes
+                if (d) {
+                    setDate(d);
+                    setSelectedSlot(null); // Reset slot when date changes
+                }
               }}
               disabled={(d) => d < new Date(new Date().setHours(0,0,0,0)) || d > add(new Date(), {days: 14})}
               className="rounded-md border bg-black/20"
@@ -148,7 +150,7 @@ export default function BookSlotPage() {
                     <p className="text-muted-foreground">Select a date and time to reserve your slot.</p>
                 )}
             </div>
-          <Button onClick={handleBooking} disabled={!selectedSlot || !date || isSubmitting} className="w-full sm:w-auto button-glow">
+          <Button onClick={handleBooking} disabled={!selectedSlot || !date || isSubmitting} className="w-full sm:w-auto button-glow" suppressHydrationWarning>
             {isSubmitting ? 'Reserving...' : 'Reserve & Proceed'}
             <Check className="ml-2 h-4 w-4"/>
           </Button>
