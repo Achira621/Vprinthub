@@ -11,7 +11,7 @@ const COOKIE_NAME = 'v-print-hub-session-id';
  * sets it in the cookies, and returns it.
  * This function runs on the server.
  */
-export function getSessionId(): string {
+export async function getSessionId(): Promise<string> {
   const cookieStore = cookies();
   let sessionId = cookieStore.get(COOKIE_NAME)?.value;
 
